@@ -19,11 +19,11 @@ const handleModelDownload = () => {
 }
    
 const handleTsTypesDownload = () => {
-    window.open(`api/front-end/ts-types-download?connectionString="${getConnectionString()}`)
+    window.open(`api/front-end/ts-types-download?connectionString=${getConnectionString()}`)
 }
 
 const handleJsClassesDownload = () => {
-    window.open(`api/front-end/js-classes-download?connectionString="${getConnectionString()}"`)
+    window.open(`api/front-end/js-classes-download?connectionString=${getConnectionString()}`)
 }
 
 const handleSystemPublishedDownload = () => {
