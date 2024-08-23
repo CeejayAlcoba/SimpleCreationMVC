@@ -1,0 +1,432 @@
+﻿using SimpleCreation.Models;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using System.Data.Common;
+using System.Reflection;
+using System.Text;
+using static Dapper.SqlMapper;
+
+namespace SimpleCreation.Services
+{
+    public class GenericService
+    {
+        private readonly FileService fileService = new FileService();
+        private readonly SqlService sqlService;
+        private readonly string connectionString;
+        private readonly string modifiedConnectionString;
+        public GenericService(string connectionString)
+        {
+            this.sqlService = new SqlService(connectionString);
+            this.connectionString =connectionString;
+            this.modifiedConnectionString = connectionString.Replace("\\", "\\\\"); ;
+        }
+        private void CreateProcedureTypeEnum()
+        {
+            string text = @"
+namespace Project."+ FolderNames.Enums+@"
+{
+    public enum ProcedureTypes
+    {
+        Insert,
+        Update, 
+        HardDeleteById,
+        GetAll,
+        GetById,
+    }
+}
+";
+            fileService.Create(FolderNames.Enums.ToString(),"ProcedureType.cs", text);
+        }
+        public void CreateProcedureGeneric()
+        {
+            CreateDapperNote();
+            CreateProcedureTypeEnum();
+            StringBuilder strConnecyionString = new StringBuilder();
+
+            string text = @"
+using Dapper;
+using Microsoft.Data.SqlClient;
+using Project." + FolderNames.Enums.ToString() + @";
+using System.Data;
+namespace Project." + FolderNames.Repositories.ToString() + @"
+{
+    public class GenericRepository<T>
+    {
+        public IDbConnection _connection;" + $@"
+         private readonly string connectionString = """+modifiedConnectionString+@""";
+" +
+@"
+       public GenericRepository()
+        {
+          _connection = new SqlConnection(connectionString);
+        }
+
+        private readonly int _commandTimeout = 120;
+        private string ProcedureName (ProcedureTypes procedureType) {
+            string tableName = typeof(T).Name;
+            return $""{tableName}_{procedureType.ToString()}""; 
+        }
+        public async Task<IEnumerable<T>> GetAll()
+        {
+            var procedureName = ProcedureName(ProcedureTypes.GetAll);
+            var result = await _connection.QueryAsync<T>(procedureName, commandTimeout: _commandTimeout,
+            commandType: CommandType.StoredProcedure);
+
+            return result.ToList();
+        }
+
+        public async Task<T> GetById(int id)
+        {
+            var procedureName = ProcedureName(ProcedureTypes.GetById);
+            return await _connection.QueryFirstOrDefaultAsync<T>
+                  (procedureName.ToString(), new { Id=id}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }
+        public async Task<T> Insert(T parameters)
+        {
+            var procedureName = ProcedureName(ProcedureTypes.Insert);
+            return await _connection.QueryFirstOrDefaultAsync<T>
+                  (procedureName.ToString(), parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }
+        public async Task<T> Update(T parameters)
+        {
+            var procedureName = ProcedureName(ProcedureTypes.Update);
+            return await _connection.QueryFirstOrDefaultAsync<T>
+                  (procedureName.ToString(), parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+           
+        }
+        public async Task<T> HardDeleteById(int id)
+        {
+            var deletedData = await GetById(id);
+            var procedureName = ProcedureName(ProcedureTypes.HardDeleteById);
+            _connection.Execute(procedureName.ToString(), new {Id=id }, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return deletedData;
+        }
+    }
+}";
+            fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
+
+        }
+        public void CreateDapperQueryGeneric()
+        {
+            CreateDapperNote();
+            string text = @"
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Reflection;
+using System.Text;
+using Dapper;
+using Microsoft.Data.SqlClient;
+
+namespace Project."+FolderNames.Repositories.ToString()+ @"
+{
+    public class GenericRepository<T> where T : class
+    {
+        IDbConnection _connection;
+
+          private readonly string connectionString = """ + modifiedConnectionString + @""";
+
+        public GenericRepository()
+        {
+            _connection = new SqlConnection(connectionString);
+        }
+
+        public async Task<T> Insert(T entity)
+        {
+            string keyColumn = GetKeyColumnName();
+            string tableName = GetTableName();
+            string columns = GetColumns(excludeKey: true);
+            string properties = GetPropertyNames(excludeKey: true);
+            string query = $@""INSERT INTO {tableName} ({columns}) VALUES ({properties})
+                              SELECT * FROM {tableName} WHERE {keyColumn} = SCOPE_IDENTITY()"";
+            return await _connection.QueryFirstOrDefaultAsync<T>(query, entity);
+
+        }
+
+        public async Task<T> HardDeleteById(int id)
+        {
+            string tableName = GetTableName();
+            string keyColumn = GetKeyColumnName();
+            var deletedData = await GetById(id);
+            string query = $@""DELETE FROM {tableName} WHERE {keyColumn} = @Id;"";
+            
+            _connection.Execute(query, new { Id = id });
+            return deletedData;
+        }
+
+        public async Task<IEnumerable<T>> GetAll()
+        {
+            string tableName = GetTableName();
+            string query = $""SELECT * FROM {tableName}"";
+            return await _connection.QueryAsync<T>(query);
+        }
+
+        public async Task<T> GetById(int Id)
+        {
+            string tableName = GetTableName();
+            string keyColumn = GetKeyColumnName();
+            string query = $""SELECT * FROM {tableName} WHERE {keyColumn} = '{Id}'"";
+            return await _connection.QueryFirstOrDefaultAsync<T>(query);
+        }
+
+        public async Task<T> Update(T entity)
+        {
+
+            string tableName = GetTableName();
+            string keyColumn = GetKeyColumnName();
+            string keyProperty = GetKeyPropertyName();
+
+            StringBuilder query = new StringBuilder();
+            query.AppendLine($""UPDATE {tableName} SET "");
+
+            var properties = GetProperties(true);
+            for (int a = 0; a < properties.Count(); a++) {
+                string propertyName = properties[a].Name;
+                string comma = a < properties.Count() - 1 ? "","" : """";
+                query.AppendLine($""{propertyName} = @{propertyName} {comma} ""); 
+            }
+            query.Remove(query.Length - 1, 1);
+
+            query.AppendLine(""WHERE {keyColumn} = @{keyProperty} SELECT * FROM {tableName} WHERE {keyColumn} = @{keyProperty}"");
+
+            return await _connection.QueryFirstOrDefaultAsync<T>(query.ToString(), entity);
+        }
+
+        private string GetTableName()
+        {
+            string tableName = """";
+            var type = typeof(T);
+            var tableAttr = type.GetCustomAttribute<TableAttribute>();
+            if (tableAttr != null)
+            {
+                tableName = tableAttr.Name;
+                return tableName;
+            }
+
+            return type.Name;
+        }
+
+        public static string GetKeyColumnName()
+        {
+            PropertyInfo[] properties = typeof(T).GetProperties();
+
+            foreach (PropertyInfo property in properties)
+            {
+                object[] keyAttributes = property.GetCustomAttributes(typeof(KeyAttribute), true);
+
+                if (keyAttributes != null && keyAttributes.Length > 0)
+                {
+                    object[] columnAttributes = property.GetCustomAttributes(typeof(ColumnAttribute), true);
+
+                    if (columnAttributes != null && columnAttributes.Length > 0)
+                    {
+                        ColumnAttribute columnAttribute = (ColumnAttribute)columnAttributes[0];
+                        return columnAttribute.Name;
+                    }
+                    else
+                    {
+                        return property.Name;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+
+        private string GetColumns(bool excludeKey = false)
+        {
+            var type = typeof(T);
+            var columns = string.Join("", "", type.GetProperties()
+                .Where(p => !excludeKey || !p.IsDefined(typeof(KeyAttribute)))
+                .Select(p =>
+                {
+                    var columnAttr = p.GetCustomAttribute<ColumnAttribute>();
+                    return columnAttr != null ? columnAttr.Name : p.Name;
+                }));
+
+            return columns;
+        }
+
+        protected string GetPropertyNames(bool excludeKey = false)
+        {
+            var properties = typeof(T).GetProperties()
+                .Where(p => !excludeKey || p.GetCustomAttribute<KeyAttribute>() == null);
+
+            var values = string.Join("", "", properties.Select(p =>
+            {
+                return $""@{p.Name}"";
+            }));
+
+            return values;
+        }
+
+        protected List<PropertyInfo> GetProperties(bool excludeKey = false)
+        {
+            var properties = typeof(T).GetProperties()
+                .Where(p => !excludeKey || p.GetCustomAttribute<KeyAttribute>() == null);
+
+            return properties.ToList();
+        }
+
+        protected string GetKeyPropertyName()
+        {
+            var properties = typeof(T).GetProperties()
+                .Where(p => p.GetCustomAttribute<KeyAttribute>() != null);
+
+            if (properties.Any())
+            {
+                return properties.FirstOrDefault().Name;
+            }
+
+            return null;
+        }
+    }
+}";
+            fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
+        }
+        private void CreateEFCoreContext()
+        {
+            StringBuilder dbSetText = new StringBuilder();
+            var tables = sqlService.GetAllTableSchema();
+            foreach (var table in tables)
+            {
+                dbSetText.AppendLine("\t\tpublic DbSet<"+table.TABLE_NAME+"> "+table.TABLE_NAME+" { get; set; }");
+            }
+
+            string text = @"
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using Project." + FolderNames.Models.ToString()+@";
+
+namespace Project."+FolderNames.ApplicationContexts.ToString()+ @"
+{
+    public class ApplicationContext : DbContext
+    {
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            string connectionString = """ + modifiedConnectionString + @""";
+            optionsBuilder.UseSqlServer(connectionString);
+            optionsBuilder.EnableSensitiveDataLogging();
+            base.OnConfiguring(optionsBuilder);
+        }
+" + dbSetText + @"
+    }
+}
+";
+            fileService.Create(FolderNames.ApplicationContexts.ToString(), "ApplicationContext.cs", text);
+        }
+        public void CreateEFCoreGeneric()
+        {
+            CreateEFCoreNote();
+            CreateEFCoreContext();
+            string text = @"
+using Microsoft.EntityFrameworkCore;
+using Project."+FolderNames.ApplicationContexts.ToString()+@";
+
+namespace Project."+FolderNames.Repositories.ToString()+ @"
+{
+    public class GenericRepository<T> where T : class
+    {
+  private readonly ApplicationContext _context = new ApplicationContext();
+
+        public async Task<T> Insert(T entity)
+        {
+            _context.Set<T>().Add(entity);
+            _context.SaveChanges();
+            return entity;
+        }
+
+        public async Task<IEnumerable<T>> GetAll()
+        {
+            return await _context.Set<T>().ToListAsync();
+        }
+
+        public async Task<T> GetById(int id)
+        {
+            return await _context.Set<T>().FindAsync(id);
+        }
+
+        public async Task<T> Update(T entity)
+        {
+            var keyValue = GetKeyValueAsInt(entity);
+            var retrievedEntity = await GetById(keyValue.Value);
+            var updateData = UpdateEntityProperties(retrievedEntity, entity);
+            await _context.SaveChangesAsync();
+            return updateData;
+        }
+        public async Task<T> HardDeleteById(int id)
+        {
+            var deletedData = await GetById(id);
+            _context.Set<T>().Remove(deletedData);
+            return deletedData;
+        }
+        private int? GetKeyValueAsInt(T entity)
+        {
+            var entityType = typeof(T);
+            var keyProperty = entityType.GetProperties()
+                .FirstOrDefault(prop => Attribute.IsDefined(prop, typeof(KeyAttribute)));
+
+            if (keyProperty == null)
+            {
+                throw new InvalidOperationException(""No Key attribute found on properties."");
+            }
+
+            var keyValue = keyProperty.GetValue(entity);
+
+            if (keyValue is int intValue)
+            {
+                return intValue;
+            }
+
+            throw new InvalidOperationException(""Key value is not of type int."");
+        }
+
+
+        private T UpdateEntityProperties(T oldEntity, T newEntity)
+        {
+            var entityType = typeof(T);
+
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.CanWrite && !Attribute.IsDefined(property, typeof(KeyAttribute)))
+                {
+                    var newValue = property.GetValue(newEntity);
+                    property.SetValue(oldEntity, newValue);
+                }
+            }
+            return newEntity;
+
+        }
+
+    }
+}";
+            fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
+        }
+
+        private void CreateDapperNote()
+        {
+            string text = @"NuGet Packages Required
+
+The project should download the following NuGet packages:
+
+PM> Install-Package Dapper
+PM> Install-Package Microsoft.Data.SqlClient";
+
+            fileService.Create("", "ReadMe.txt", text);
+        }
+        private void CreateEFCoreNote()
+        {
+            string text = @"NuGet Packages Required
+
+The project should download the following NuGet packages:
+
+PM> Install-Package Microsoft.EntityFrameworkCore
+PM> Install-Package Microsoft.EntityFrameworkCore.Tools
+PM> Install-Package Microsoft.EntityFrameworkCore.SqlServer";
+
+            fileService.Create("", "ReadMe.txt", text);
+        }
+    }
+}
