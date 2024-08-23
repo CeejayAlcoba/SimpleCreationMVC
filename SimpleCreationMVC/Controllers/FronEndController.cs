@@ -27,7 +27,7 @@ namespace SimpleCreationMVC.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPost("ts-types-download")]
+        [HttpGet("ts-types-download")]
         public IActionResult GetTsTypes([FromQuery] string connectionString)
         {
             try
