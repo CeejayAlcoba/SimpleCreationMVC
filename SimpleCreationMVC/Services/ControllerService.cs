@@ -11,9 +11,8 @@ namespace SimpleCreation.Services
         public ControllerService(string connectionString) { 
             this.sqlService = new SqlService(connectionString);
         }
-        public void CreateWebApisControllerFiles(List<TableSchema> tableSchemas=null)
+        public void CreateWebApisControllerFiles(List<TableSchema> tableSchemas)
         {
-            if (tableSchemas.IsNullOrEmpty()) tableSchemas = sqlService.GetAllTableSchema();
             foreach (var tableSchema in tableSchemas)
             {
                 CreateWebApiControllerFile(tableSchema.TABLE_NAME);

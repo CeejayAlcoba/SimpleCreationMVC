@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using SimpleCreation.Models;
 using SimpleCreation.Services;
 
 namespace SimpleCreationMVC.Controllers
@@ -8,17 +10,16 @@ namespace SimpleCreationMVC.Controllers
     [ApiController]
     public class ModelController : ControllerBase
     {
-        [HttpGet("download-all")]
-        public IActionResult DownloadAllModel([FromQuery] string connectionString)
+        [HttpPost("create")]
+        public IActionResult DownloadAllModel([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
-            FileService fileService = new FileService();
-            ModelService modelService = new ModelService(connectionString);
+            FileService _fileService = new FileService();
+            ModelService _modelService = new ModelService(connectionString);
 
-            fileService.Delete();
-            modelService.CreateModelClassesFiles();
+            _fileService.Delete();
+            _modelService.CreateModelClassesFiles(tableSchemas);
 
-            string projectZip = fileService.ZipProjectFile();
-            return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
+            return Ok();
         }
     }
 }

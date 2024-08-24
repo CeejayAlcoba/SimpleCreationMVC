@@ -35,10 +35,8 @@ class " + tableSchema.TABLE_NAME + @" {
             return text;
         }
 
-        public void CreateJsClasses(List<TableSchema> tableSchemas = null)
+        public void CreateJsClasses(List<TableSchema> tableSchemas)
         {
-            if (tableSchemas.IsNullOrEmpty()) tableSchemas = _sqlService.GetAllTableSchema();
-
             StringBuilder jsClassesText = new StringBuilder();
             foreach (var tableSchema in tableSchemas)
             {
@@ -69,14 +67,13 @@ export type " + tableSchema.TABLE_NAME + @" = {
             return text;
 
         }
-        public void CreateTsTypes()
+        public void CreateTsTypes(List<TableSchema> tableSchemas)
         {
             string folderName = FolderNames.TsTypes.ToString();
-            var tableShemas = _sqlService.GetAllTableSchema();
-            foreach (var tableSchema in tableShemas)
+            foreach (var tableSchema in tableSchemas)
             {
                 string text = CreateTsType(tableSchema);
-                _fileService.Create(FolderNames.TsTypes.ToString(), $"{tableSchema.TABLE_NAME}.ts", text);
+                _fileService.Create(folderName, $"{tableSchema.TABLE_NAME}.ts", text);
             }
 
         }

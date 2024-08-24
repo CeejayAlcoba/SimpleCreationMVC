@@ -7,17 +7,10 @@ namespace SimpleCreation.Services
 {
     public class ServiceService
     {
-        private readonly SqlService sqlService;
         private readonly FileService fileService = new FileService();
         private readonly TextService textService = new TextService();
-        public ServiceService(string connectionString)
+        public void CreateServicesFiles(List<TableSchema> tableSchemas)
         {
-            this.sqlService = new SqlService(connectionString);
-        }
-        public void CreateServicesFiles(List<TableSchema> tableSchemas = null)
-        {
-            if(tableSchemas.IsNullOrEmpty()) tableSchemas = sqlService.GetAllTableSchema();
-
             foreach (var tableSchema in tableSchemas)
             {
                 if (tableSchema.isServiceFileAllowed == false) continue;

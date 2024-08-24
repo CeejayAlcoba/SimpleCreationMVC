@@ -7,23 +7,14 @@ namespace SimpleCreation.Services
 {
     public class RepositoryService
     {
-
-        private readonly SqlService sqlService;
         private readonly FileService fileService = new FileService();
-        public RepositoryService(string connectionString)
+        public void CreateRepositoriesFiles(List<TableSchema> tableSchemas)
         {
-            this.sqlService = new SqlService(connectionString);
-        }
-
-        public void CreateRepositoriesFiles(List<TableSchema> tableSchemas = null)
-        {
-          if(tableSchemas.IsNullOrEmpty()) tableSchemas = sqlService.GetAllTableSchema();
 
             foreach (var table in tableSchemas)
             {
                 string tableName = table.TABLE_NAME;
                 CreateRepositoryFile(tableName);
-              
             }
 
         }

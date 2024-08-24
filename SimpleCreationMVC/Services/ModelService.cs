@@ -39,9 +39,8 @@ namespace SimpleCreation.Services
             };
             return newColumns;
         }
-        public void CreateModelClassesFiles(List<TableSchema> tableSchemas = null )
+        public void CreateModelClassesFiles(List<TableSchema> tableSchemas)
         {
-            if(tableSchemas.IsNullOrEmpty()) tableSchemas = SqlService.GetAllTableSchema();
             foreach (var tableSchema in tableSchemas)
             {
                 var model = GetModelByTable(tableSchema);

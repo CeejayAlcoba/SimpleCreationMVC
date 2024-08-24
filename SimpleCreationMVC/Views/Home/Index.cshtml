@@ -2,18 +2,14 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center ">
-  
-    <form>
-        <div class="form-group">
-            <label>Connection String</label>
-            <input data-input="connectionString" class="form-control">
-        </div>
-      
-    </form>
-   
-
-    <div id="botton-download-container" class="row gap-2 d-flex justify-content-center">
-
+<div>
+    <div class="row d-flex justify-content-center gap-2 mb-2">
+        <label class="col-lg-10">Connection String</label>
+        <input data-input="connectionString" class="col-lg-8">
+        <button class="col-lg-2 btn btn-primary" id="generate-btn">Generate</button>
     </div>
+
+    <div id="botton-download-container" class="row gap-2 d-flex justify-content-center mb-2"></div>
+    <div id="table-schema-container" class="row gap-2 d-flex justify-content-center"> </div>
+
 </div>

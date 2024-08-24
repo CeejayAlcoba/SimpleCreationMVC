@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using SimpleCreation.Models;
 using SimpleCreation.Services;
 using SimpleCreationMVC.Services;
 
@@ -9,36 +11,41 @@ namespace SimpleCreationMVC.Controllers
     [ApiController]
     public class FrontEndController : ControllerBase
     {
-        [HttpGet("js-classes-download")]
-        public IActionResult GetJsClasses([FromQuery] string connectionString)
+        [HttpPost("js-classes/create")]
+        public IActionResult GetJsClasses([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
                 FronEndService _fronEndService = new FronEndService(connectionString);
                 FileService _fileService = new FileService();
-                _fileService.Delete();
-                _fronEndService.CreateJsClasses();
+                SqlService _sqlService = new SqlService(connectionString);
 
-                string projectZip = _fileService.ZipProjectFile();
-                return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
+                if (tableSchemas.IsNullOrEmpty())
+                {
+                    tableSchemas = _sqlService.GetAllTableSchema();
+                }
+                _fileService.Delete();
+                _fronEndService.CreateJsClasses(tableSchemas);
+
+                return Ok();
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
-        [HttpGet("ts-types-download")]
-        public IActionResult GetTsTypes([FromQuery] string connectionString)
+        [HttpPost("ts-types/create")]
+        public IActionResult GetTsTypes([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
                 FronEndService _fronEndService = new FronEndService(connectionString);
                 FileService _fileService = new FileService();
-                _fileService.Delete();
-                _fronEndService.CreateTsTypes();
 
-                string projectZip = _fileService.ZipProjectFile();
-                return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
+                _fileService.Delete();
+                _fronEndService.CreateTsTypes(tableSchemas);
+
+                return Ok();
             }
             catch (Exception ex)
             {

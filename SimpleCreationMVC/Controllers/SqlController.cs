@@ -4,7 +4,7 @@ using SimpleCreation.Services;
 
 namespace SimpleCreation.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/sql")]
     [ApiController]
     public class SqlController : Controller
     {
@@ -13,13 +13,6 @@ namespace SimpleCreation.Controllers
         {
             try
             {
-                //FileService fileService = new FileService();
-                //InitialFileCreationService initialService = new InitialFileCreationService(connectionString);
-                //ModelService modelService = new ModelService(connectionString);
-                //RepositoryService repositoryService = new RepositoryService(connectionString);
-                //StoredProcedureService storedProcedureService = new StoredProcedureService(connectionString);
-                //ServiceService serviceService = new ServiceService(connectionString);
-
                 SqlService sqlService = new SqlService(connectionString);
 
                 var tables =  sqlService.GetAllTableSchema();

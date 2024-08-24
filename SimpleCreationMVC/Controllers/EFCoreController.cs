@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 
@@ -7,59 +8,26 @@ namespace SimpleCreation.Controllers
     [Route("api/ef-core")]
     public class EFCoreController : Controller
     {
-
-        [HttpGet("download-all")]
-        public IActionResult DownloadAll([FromQuery] string connectionString)
-        {
-            try
-            {
-                FileService fileService = new FileService();
-                GenericService genericService = new GenericService(connectionString);
-                ModelService modelService = new ModelService(connectionString);
-                RepositoryService repositoryService = new RepositoryService(connectionString);
-                ServiceService serviceService = new ServiceService(connectionString);
-                ControllerService controllerService = new ControllerService(connectionString);
-
-                fileService.Delete();
-
-                genericService.CreateEFCoreGeneric();
-                modelService.CreateModelClassesFiles();
-                repositoryService.CreateRepositoriesFiles();
-                serviceService.CreateServicesFiles();
-                controllerService.CreateWebApisControllerFiles();
-
-                string projectZip = fileService.ZipProjectFile();
-                return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-
-        }
-
-        [HttpPost("download-custom")]
+        [HttpPost("create")]
         public IActionResult DownloadCustom([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
-                FileService fileService = new FileService();
-                GenericService genericService = new GenericService(connectionString);
-                ModelService modelService = new ModelService(connectionString);
-                RepositoryService repositoryService = new RepositoryService(connectionString);
-                ServiceService serviceService = new ServiceService(connectionString);
-                ControllerService controllerService = new ControllerService(connectionString);
+                FileService _fileService = new FileService();
+                GenericService _genericService = new GenericService(connectionString);
+                ModelService _modelService = new ModelService(connectionString);
+                RepositoryService _repositoryService = new RepositoryService();
+                ServiceService _serviceService = new ServiceService();
+                ControllerService _controllerService = new ControllerService(connectionString);
 
-                fileService.Delete();
+                _fileService.Delete();
+                _genericService.CreateEFCoreGeneric();
+                _modelService.CreateModelClassesFiles(tableSchemas);
+                _repositoryService.CreateRepositoriesFiles(tableSchemas);
+                _serviceService.CreateServicesFiles(tableSchemas);
+                _controllerService.CreateWebApisControllerFiles(tableSchemas);
 
-                genericService.CreateEFCoreGeneric();
-                modelService.CreateModelClassesFiles(tableSchemas);
-                repositoryService.CreateRepositoriesFiles();
-                serviceService.CreateServicesFiles(tableSchemas);
-                controllerService.CreateWebApisControllerFiles(tableSchemas);
-
-                string projectZip = fileService.ZipProjectFile();
-                return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
+                return Ok();
             }
             catch (Exception ex)
             {

@@ -17,15 +17,15 @@ namespace SimpleCreation.Services
 
 
         }
-        public void Delete()
+        public void Delete(bool isProject = true, bool isProjectZip = true)
         {
             string project = Path.Combine("Project");
             string projectZip = Path.Combine("ProjectZip");
-            if(Directory.Exists(project))
+            if(Directory.Exists(project) && isProject)
             {
                 Directory.Delete(project, true);
             }
-            if(Directory.Exists(projectZip))
+            if(Directory.Exists(projectZip) && isProjectZip)
             {
                 Directory.Delete(projectZip, true);
             }

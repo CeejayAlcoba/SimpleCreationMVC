@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 using System.IO;
@@ -10,64 +11,29 @@ namespace SimpleCreation.Controllers
     public class DapperStoredProcedureController : Controller
     {
 
-        [HttpGet("download-all")]
-        public IActionResult DownloadAll([FromQuery]string connectionString)
-        {
-            try
-            {
-                FileService fileService = new FileService();
-                GenericService genericService = new GenericService(connectionString);
-                ModelService modelService = new ModelService(connectionString);
-                RepositoryService repositoryService = new RepositoryService(connectionString);
-                StoredProcedureService storedProcedureService = new StoredProcedureService(connectionString);
-                ServiceService serviceService = new ServiceService(connectionString);
-                ControllerService controllerService = new ControllerService(connectionString);
-                
-                fileService.Delete();
-
-                genericService.CreateProcedureGeneric();
-                modelService.CreateModelClassesFiles();
-                repositoryService.CreateRepositoriesFiles();
-                storedProcedureService.CreateStoredProceduresFiles();
-                storedProcedureService.CreateEnumProcedureFile();
-                serviceService.CreateServicesFiles();
-                controllerService.CreateWebApisControllerFiles();
-
-                string projectZip = fileService.ZipProjectFile();
-                return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-
-        }
-
-        [HttpPost("download-custom")]
+        [HttpPost("create")]
         public IActionResult DownloadCustom([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
-                FileService fileService = new FileService();
-                GenericService genericService = new GenericService(connectionString);
-                ModelService modelService = new ModelService(connectionString);
-                RepositoryService repositoryService = new RepositoryService(connectionString);
-                StoredProcedureService storedProcedureService = new StoredProcedureService(connectionString);
-                ServiceService serviceService = new ServiceService(connectionString);
-                ControllerService controllerService = new ControllerService(connectionString);
+                FileService _fileService = new FileService();
+                GenericService _genericService = new GenericService(connectionString);
+                ModelService _modelService = new ModelService(connectionString);
+                RepositoryService _repositoryService = new RepositoryService();
+                StoredProcedureService _storedProcedureService = new StoredProcedureService(connectionString);
+                ServiceService _serviceService = new ServiceService();
+                ControllerService _controllerService = new ControllerService(connectionString);
 
-                fileService.Delete();
+                _fileService.Delete();
+                _genericService.CreateProcedureGeneric();
+                _modelService.CreateModelClassesFiles(tableSchemas);
+                _repositoryService.CreateRepositoriesFiles(tableSchemas);
+                _storedProcedureService.CreateStoredProceduresFiles(tableSchemas);
+                _storedProcedureService.CreateEnumProcedureFile();
+                _serviceService.CreateServicesFiles(tableSchemas);
+                _controllerService.CreateWebApisControllerFiles(tableSchemas);
 
-                genericService.CreateProcedureGeneric();
-                modelService.CreateModelClassesFiles(tableSchemas);
-                repositoryService.CreateRepositoriesFiles();
-                storedProcedureService.CreateStoredProceduresFiles(tableSchemas);
-                //storedProcedureService.CreateEnumProcedureFile(tableSchemas);
-                serviceService.CreateServicesFiles(tableSchemas);
-                controllerService.CreateWebApisControllerFiles(tableSchemas);
-
-                string projectZip = fileService.ZipProjectFile();
-                return File(System.IO.File.OpenRead(projectZip), "application/octet-stream", Path.GetFileName(projectZip));
+                return Ok();
             }
             catch (Exception ex)
             {
