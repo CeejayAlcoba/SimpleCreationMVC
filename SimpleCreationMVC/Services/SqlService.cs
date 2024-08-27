@@ -82,7 +82,7 @@ namespace SimpleCreation.Services
                                CCU.TABLE_NAME='{tableName}'
                                AND TC.CONSTRAINT_TYPE='PRIMARY KEY'";
 
-            return connection.QueryFirstOrDefault<Column>(query);
+            return connection.QueryFirstOrDefault<Column>(query)?? new Column();
         }
 
     }
