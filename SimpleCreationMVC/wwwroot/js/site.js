@@ -18,11 +18,11 @@ const ajaxInstance = async (ajaxProps) => {
         const data = await $.ajax({ ...ajaxProps, contentType: "application/json; charset=utf-8" });
         return data;
     }
-    catch {
+    catch (e) {
         Swal.fire({
             icon: "error",
             title: "Oops...",
-            text: "Something went wrong!",
+            text: e?.responseText ?? "Something went wrong!",
         });
     }
     finally {
