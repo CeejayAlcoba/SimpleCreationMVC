@@ -1,20 +1,37 @@
 $(_ => {
-    generateDownloadButtons();
+    generateDownloadOptions();
+    handleOnClickDownloadButton();
+    disabledDownloadButton();
+
     handleConnectionStringOnChange();
     handleClickGenerateBtn();
     handleClickSystemDownloadBtn();
+
+    handleTableFilterOnChange();
     isLoading(false);
 })
 
 const ajaxInstance = async (ajaxProps) => {
-    isLoading(true);
-    const data = await $.ajax({ ...ajaxProps, contentType: "application/json; charset=utf-8" });
-    isLoading(false);
-    return data;
+    try {
+
+        isLoading(true);
+        const data = await $.ajax({ ...ajaxProps, contentType: "application/json; charset=utf-8" });
+        return data;
+    }
+    catch {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "Something went wrong!",
+        });
+    }
+    finally {
+        isLoading(false);
+    }
 }
 
 //---APIs---//
-const getTableShemas = async (connectionString) => {
+const getTableShemas = async () => {
     const encodedConnectionString = getConnectionStringEncodedUri();
     return await ajaxInstance({
         method: "GET",
@@ -30,7 +47,7 @@ const downloadDapperQuery = async (tables) => {
     await ajaxInstance({
         method: "POST",
         url: `api/dapper-query/create?connectionString=${getConnectionStringEncodedUri()}`,
-        data: JSON.stringify(tables ?? tableSchemas)
+        data: JSON.stringify(tables ?? tempTableSchemas)
     })
     await downloadProject();
 }
@@ -39,7 +56,7 @@ const downloadDapperProcedure = async (tables) => {
     await ajaxInstance({
         method: "POST",
         url: `api/dapper-stored-procedure/create?connectionString=${getConnectionStringEncodedUri()}`,
-        data: JSON.stringify(tables ?? tableSchemas)
+        data: JSON.stringify(tables ?? tempTableSchemas)
     })
     await downloadProject();
 }
@@ -48,7 +65,16 @@ const downloadEFCore = async (tables) => {
     await ajaxInstance({
         method: "POST",
         url: `api/ef-core/create?connectionString=${getConnectionStringEncodedUri()}`,
-        data: JSON.stringify(tables ?? tableSchemas)
+        data: JSON.stringify(tables ?? tempTableSchemas)
+    })
+    await downloadProject();
+}
+
+const downloadStoredProcedure = async (tables) => {
+    await ajaxInstance({
+        method: "POST",
+        url: `api/sql/stored-procedure/create?connectionString=${getConnectionStringEncodedUri()}`,
+        data: JSON.stringify(tables ?? tempTableSchemas)
     })
     await downloadProject();
 }
@@ -57,7 +83,34 @@ const downloadModel = async (tables) => {
     await ajaxInstance({
         method: "POST",
         url: `api/model/create?connectionString=${getConnectionStringEncodedUri()}`,
-        data: JSON.stringify(tables ?? tableSchemas)
+        data: JSON.stringify(tables ?? tempTableSchemas)
+    })
+    await downloadProject();
+}
+
+const downloadController = async (tables) => {
+    await ajaxInstance({
+        method: "POST",
+        url: `api/controller/create?connectionString=${getConnectionStringEncodedUri()}`,
+        data: JSON.stringify(tables ?? tempTableSchemas)
+    })
+    await downloadProject();
+}
+
+const downloadRepository = async (tables) => {
+    await ajaxInstance({
+        method: "POST",
+        url: `api/repository/create?connectionString=${getConnectionStringEncodedUri()}`,
+        data: JSON.stringify(tables ?? tempTableSchemas)
+    })
+    await downloadProject();
+}
+
+const downloadService = async (tables) => {
+    await ajaxInstance({
+        method: "POST",
+        url: `api/service/create?connectionString=${getConnectionStringEncodedUri()}`,
+        data: JSON.stringify(tables ?? tempTableSchemas)
     })
     await downloadProject();
 }
@@ -66,7 +119,7 @@ const downloadTsTypes = async (tables) => {
     await ajaxInstance({
         method: "POST",
         url: `api/front-end/ts-types/create?connectionString=${getConnectionStringEncodedUri()}`,
-        data: JSON.stringify(tables ?? tableSchemas)
+        data: JSON.stringify(tables ?? tempTableSchemas)
     })
     await downloadProject();
 }
@@ -75,7 +128,7 @@ const downloadJsClasses = async (tables) => {
     await ajaxInstance({
         method: "POST",
         url: `api/front-end/js-classes/create?connectionString=${getConnectionStringEncodedUri()}`,
-        data: JSON.stringify(tables ?? tableSchemas)
+        data: JSON.stringify(tables ?? tempTableSchemas)
     })
     await downloadProject();
 }
@@ -96,53 +149,77 @@ const handleConnectionStringOnChange = () => {
     $(`[data-input="connectionString"]`).on("keyup", (e) => {
 
         localStorage.setItem("connectionString", e.target.value);
-        disabledDownloadButtons();
+        disabledDownloadButton();
     })
 }
 
 
-//---BUTTON COMPONENT---//
-let downloadBottons = [
+//---DOWNLOAD COMPONENTS---//
+let downloadOptions = [
     {
-        label: "Dapper Query Download",
-        onClick: `downloadDapperQuery()`,
+        label: "Dapper Query Project",
+        onDownload:()=> downloadDapperQuery(),
 
     },
     {
-        label: "Dapper Stored Procedure Download",
-        onClick: `downloadDapperProcedure()`,
+        label: "Dapper Stored Procedure Project",
+        onDownload: () => downloadDapperProcedure(),
 
     },
     {
-        label: "EF Core Download",
-        onClick: `downloadEFCore()`,
+        label: "EF Core Project",
+        onDownload: () => downloadEFCore(),
 
     },
     {
-        label: "Model Only Download",
-        onClick: `downloadModel()`,
+        label: "CRUD Stored Procedure Only",
+        onDownload: () => downloadStoredProcedure()
 
     },
     {
-        label: "TypeScript Types Only Download",
-        onClick: `downloadTsTypes()`,
+        label: "Model Only",
+        onDownload: () => downloadModel(),
 
     },
     {
-        label: "JavaScript Classes Only Download",
-        onClick: `downloadJsClasses()`,
+        label: "Controller Only",
+        onDownload: () => downloadController()
+
+    },
+    {
+        label: "Repository Only",
+        onDownload: () => downloadRepository()
+
+    },
+    {
+        label: "Service Only",
+        onDownload: () => downloadService()
+
+    },
+    {
+        label: "TypeScript Types Only",
+        onDownload: () => downloadTsTypes(),
+
+    },
+    {
+        label: "JavaScript Classes Only",
+        onDownload: () => downloadJsClasses(),
     },
 ];
 
-const disabledDownloadButtons = () => {
-    const isDisabled = !getConnectionStringEncodedUri() || tableSchemas.length == 0;
-    $(".download-btn").prop("disabled", isDisabled)
+const generateDownloadOptions = () => {
+    downloadOptions.map(options => {
+        $(`#select-option-download`).append(
+            `<option value="${options.label}">${options.label}</option>`
+        )
+    })
+    
 }
 
-const handleClickGenerateBtn = () => {
-    $("#generate-btn").on("click", async () => {
-        await handleGenerateTableSchemas();
-        disabledDownloadButtons();
+const handleOnClickDownloadButton = () => {
+    $(`#download-btn`).on('click', _ => {
+        const downloadVal = $(`#select-option-download`).val();
+        downloadOptions.find(option => option.label == downloadVal).onDownload();
     })
 }
 
@@ -152,20 +229,54 @@ const handleClickSystemDownloadBtn = () => {
     })
 }
 
-const generateDownloadButtons = () => {
-    downloadBottons.map(btn => {
-        $("#botton-download-container").append(`
-        <button type="button" class="download-btn btn btn-${btn.btnColor ?? 'primary'} col-lg-5" onClick=` + `${btn.onClick}` + `> ${btn.label} </button>
-    `);
+const disabledDownloadButton = () => {
+    const isDisabled = !getConnectionStringEncodedUri() || tempTableSchemas.length == 0;
+    $("#download-btn").prop("disabled", isDisabled)
+}
+
+const handleClickGenerateBtn = () => {
+    $("#generate-btn").on("click", async () => {
+        await handleGenerateTempTableSchemas();
+        disabledDownloadButton();
+        generateTableFilterOptions();
     })
-    disabledDownloadButtons();
+}
+
+
+//---TABLE FILTER SELECT OPTION COMPONENTS---//
+const handleTableFilterOnChange = () => {
+    $(`#table-filter-option`).on('change', _ => {
+        tempTableSchemas = tableSchemas;
+        const filterVal = $(`#table-filter-option`).val();
+        if (filterVal == "all") {
+            handleGenerateTempTableSchemas(tempTableSchemas);
+        }
+        else {
+            const filteredTable = tempTableSchemas.filter(t => t.tablE_NAME == filterVal);
+            handleGenerateTempTableSchemas(filteredTable);
+        }
+    })
+
+}
+
+const generateTableFilterOptions = () => {
+    $(`#table-filter-option`).empty();
+    $(`#table-filter-option`).append(`
+            <option value="all">All</option> `
+    );
+    tempTableSchemas.map(table => {
+        $(`#table-filter-option`).append(
+            `<option value="${table.tablE_NAME}">${table.tablE_NAME}</option>`
+        )
+    })
+   
 }
 
 
 
 //---TABLE SCHEMA COMPONENTS---//
-
 let tableSchemas = [];
+let tempTableSchemas = [];
 
 let headers = [
     {
@@ -178,39 +289,27 @@ let headers = [
     }
 ];
 
-let checkBoxes = [
-    {
-        key: 'isControllerFileAllowed',
-        label: 'Controller File',
-    },
-    {
-        key: 'isServiceFileAllowed',
-        label: 'Service File',
-    },
-    {
-        key: 'isRepositoryFileAllowed',
-        label: 'Repository File',
-    },
-    {
-        key: 'isModelFileAllowed',
-        label: 'Model File',
-    },
-]
-
-const handleGenerateTableSchemas = async (tableSchemaData) => {
+const handleGenerateTempTableSchemas = async (tableSchemaData) => {
     const connectionString = getConnectionStringEncodedUri();
         tableContainer = $(`#table-schema-container`);
 
     tableContainer.empty();
-    tableSchemas = tableSchemaData ?? await getTableShemas(connectionString);
-    tableSchemas.map(schema => {
+    if (tableSchemaData) {
+        tempTableSchemas = tableSchemaData
+    }
+    else {
+        tableSchemas = await getTableShemas(connectionString);
+        tempTableSchemas = tableSchemas
+        
+    }
+    tempTableSchemas.map(schema => {
         const table = tableSchemaComponent({ title: schema.tablE_NAME, schema, headers });
         tableContainer.append(table);
     })
 }
 
 const handleCheckbox = (tableName, key) => {
-    let table = tableSchemas.find(t => t.tablE_NAME == tableName);
+    let table = tempTableSchemas.find(t => t.tablE_NAME == tableName);
     table[key] = !table[key];
 }
 
@@ -232,8 +331,9 @@ const handleRemoveTable = (tableName) => {
                 showConfirmButton: false,
                 timer: 1500
             });
-            const filteredTable =  tableSchemas.filter(t => t.tablE_NAME !== tableName);
-            handleGenerateTableSchemas(filteredTable);
+            const filteredTable = tableSchemas.filter(t => t.tablE_NAME !== tableName);
+            handleGenerateTempTableSchemas(filteredTable);
+            generateTableFilterOptions();
         }
     });
    
@@ -250,14 +350,6 @@ const tableSchemaComponent = ({ title, schema, headers = [] }) => {
 
         return prevRow += `${columnsComponent}</tr>`;
     }, "");
-
-    const checkBoxesComponent = checkBoxes.reduce((prev, checkBox) => {
-        const isChecked = schema[checkBox.key] ? "checked" : "";
-        return prev += `<div class="col-md-4">
-                            <input type="checkbox" ${isChecked} onchange='handleCheckbox("${schema.tablE_NAME}", "${checkBox.key}")'>
-                            <label>${checkBox.label}</label>
-                        </div>`
-    }, "")
 
     return `
          <div class="col-lg-5 card p-2">
@@ -277,15 +369,11 @@ const tableSchemaComponent = ({ title, schema, headers = [] }) => {
                       </tbody>
                  </table>
            </div>
-           <div class="row">
-             ${checkBoxesComponent}
-           </div>
-         </div>`
+       </div>`
 }
 
 
 //---LOADING PAGE SPINNER---//
-
 const isLoading = async (isloading) => {
     await $('.loading-overlay').css('display', isloading ? '' :'none')
 }

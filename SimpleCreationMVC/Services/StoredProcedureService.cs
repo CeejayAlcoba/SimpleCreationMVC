@@ -14,9 +14,8 @@ namespace SimpleCreation.Services
         
         this.SqlService = new SqlService(connectionString);
         }
-        public void CreateStoredProceduresFiles(List<TableSchema> tableSchemas = null)
+        public void CreateStoredProceduresFiles(List<TableSchema> tableSchemas)
         {
-            if(tableSchemas.IsNullOrEmpty()) tableSchemas = SqlService.GetAllTableSchema();
             var currentProcedures = SqlService.GetAllCurentStoredProcesures();
 
             foreach (var tableSchema in tableSchemas)

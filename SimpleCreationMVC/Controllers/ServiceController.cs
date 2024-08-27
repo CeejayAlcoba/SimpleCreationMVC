@@ -1,25 +1,24 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 
 namespace SimpleCreationMVC.Controllers
 {
-    [Route("api/model")]
+    [Route("api/service")]
     [ApiController]
-    public class ModelController : ControllerBase
+    public class ServiceController : ControllerBase
     {
         [HttpPost("create")]
-        public IActionResult DownloadAllModel([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
+        public IActionResult CreateService([FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
                 FileService _fileService = new FileService();
-                ModelService _modelService = new ModelService(connectionString);
+                ServiceService _serviceService = new ServiceService();
 
                 _fileService.Delete();
-                _modelService.CreateModelClassesFiles(tableSchemas);
+                _serviceService.CreateServicesFiles(tableSchemas);
 
                 return Ok();
             }
@@ -27,7 +26,6 @@ namespace SimpleCreationMVC.Controllers
             {
                 return BadRequest(ex.Message);
             }
-           
         }
     }
 }

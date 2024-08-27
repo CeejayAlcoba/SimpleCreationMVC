@@ -10,7 +10,6 @@ namespace SimpleCreation.Controllers
     [Route("api/dapper-stored-procedure")]
     public class DapperStoredProcedureController : Controller
     {
-
         [HttpPost("create")]
         public IActionResult DownloadCustom([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
