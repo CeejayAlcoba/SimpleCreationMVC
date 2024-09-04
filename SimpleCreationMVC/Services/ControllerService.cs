@@ -24,7 +24,7 @@ namespace SimpleCreation.Services
             string table = tableName;
             string variableTableName = textService.ToCamelCase(table);
             string service = $"{tableName}Service";
-            string serviceName = textService.ToCamelCase(service);
+            string serviceName = $"_{textService.ToCamelCase(service)}";
             string text = @"
 using Microsoft.AspNetCore.Mvc;
 using Project."+FolderNames.Models.ToString()+ @";
@@ -38,7 +38,7 @@ namespace Project.Controllers
     {
         private readonly " + service + " " + serviceName + " = new " + service + @"();
 
-        [HttpGet(""all"")]
+        [HttpGet(""list"")]
         public async Task<IActionResult> GetAll" + table + @"()
         {
             try
