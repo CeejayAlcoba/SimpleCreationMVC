@@ -3,6 +3,7 @@ using SimpleCreation.Models;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SimpleCreation.Services
 {
@@ -17,23 +18,40 @@ namespace SimpleCreation.Services
         public void CreateStoredProceduresFiles(List<TableSchema> tableSchemas)
         {
             var currentProcedures = SqlService.GetAllCurentStoredProcesures();
-
+            StringBuilder allSp = new StringBuilder();
             foreach (var tableSchema in tableSchemas)
             {
                 var tableName = tableSchema.TABLE_NAME;
+
                 if (tableSchema.isGetAllProcedureAllowed == true)
-                    CreateProcedureGetAllFile(tableSchema, currentProcedures);
+                {
+                    string text = CreateProcedureGetAllFile(tableSchema, currentProcedures);
+                    allSp.AppendLine(text);
+                }
                 if (tableSchema.isInsertProcedureAllowed == true)
-                    CreateProcedureInsertFile(tableSchema, currentProcedures);
+                {
+                    string text = CreateProcedureInsertFile(tableSchema, currentProcedures);
+                    allSp.AppendLine(text);
+                }
                 if(tableSchema.isUpdateProcedureAllowed == true)
-                    CreateProcedureUpdateFile(tableSchema, currentProcedures);
+                {
+                    string text = CreateProcedureUpdateFile(tableSchema, currentProcedures);
+                    allSp.AppendLine(text);
+                }
                 if(tableSchema.isGetByIdProcedureAllowed == true)
-                    CreateProcedureGetByIdFile(tableSchema, currentProcedures);
-                if (tableSchema.isHardDeleteByIdProcedureAllowed == true)
-                    CreateProcedureHardDeleteByIdFile(tableSchema, currentProcedures);
+                {
+                    string text = CreateProcedureGetByIdFile(tableSchema, currentProcedures);
+                    allSp.AppendLine(text);
+                }
+                if (tableSchema.isDeleteByIdProcedureAllowed == true)
+                {
+                    string text = CreateProcedureDeleteByIdFile(tableSchema, currentProcedures);
+                    allSp.AppendLine(text);
+                }
             }
+            fileService.Create(FolderNames.StoredProcedures.ToString(), $"All.sql", allSp.ToString());
         }
-        private void CreateProcedureGetByIdFile(TableSchema tableSchema, List<string> currentProcedures)
+        private string CreateProcedureGetByIdFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetById.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
@@ -47,8 +65,10 @@ namespace SimpleCreation.Services
              GO
             ");
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+
+            return text.ToString();
         }
-        private void CreateProcedureUpdateFile(TableSchema tableSchema, List<string> currentProcedures)
+        private string CreateProcedureUpdateFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.Update.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
@@ -78,8 +98,10 @@ namespace SimpleCreation.Services
              GO
             ");
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+
+            return text.ToString();
         }
-        private void CreateProcedureGetAllFile(TableSchema tableSchema, List<string> currentProcedures)
+        private string CreateProcedureGetAllFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAll.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
@@ -93,10 +115,11 @@ namespace SimpleCreation.Services
 
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
 
+            return text.ToString();
         }
-        private void CreateProcedureHardDeleteByIdFile(TableSchema tableSchema, List<string> currentProcedures)
+        private string CreateProcedureDeleteByIdFile(TableSchema tableSchema, List<string> currentProcedures)
         {
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.HardDeleteById.ToString()}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.DeleteById.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
 
             var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
@@ -110,8 +133,10 @@ namespace SimpleCreation.Services
             ");
 
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+
+            return text.ToString();
         }
-        private void CreateProcedureInsertFile(TableSchema tableSchema,List<string> currentProcedures )
+        private string CreateProcedureInsertFile(TableSchema tableSchema,List<string> currentProcedures )
         {
             var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.Insert.ToString()}";
@@ -154,6 +179,8 @@ namespace SimpleCreation.Services
             ");
 
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+
+            return text.ToString();
         }
         public void CreateEnumProcedureFile()
         {

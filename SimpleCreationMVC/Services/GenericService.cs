@@ -30,7 +30,7 @@ namespace Project."+ FolderNames.Enums+@"
     {
         Insert,
         Update, 
-        HardDeleteById,
+        DeleteById,
         GetAll,
         GetById,
     }
@@ -51,7 +51,7 @@ using Project." + FolderNames.Enums.ToString() + @";
 using System.Data;
 namespace Project." + FolderNames.Repositories.ToString() + @"
 {
-    public class GenericRepository<T>
+    public class GenericRepository<T> where T : class
     {
         public IDbConnection _connection;" + $@"
          private readonly string connectionString = """+modifiedConnectionString+@""";
@@ -67,7 +67,7 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             string tableName = typeof(T).Name;
             return $""{tableName}_{procedureType.ToString()}""; 
         }
-        public async Task<IEnumerable<T>> GetAll()
+        public virtual async Task<IEnumerable<T>> GetAll()
         {
             var procedureName = ProcedureName(ProcedureTypes.GetAll);
             var result = await _connection.QueryAsync<T>(procedureName, commandTimeout: _commandTimeout,
@@ -76,29 +76,29 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             return result.ToList();
         }
 
-        public async Task<T> GetById(int id)
+        public virtual async Task<T> GetById(int id)
         {
             var procedureName = ProcedureName(ProcedureTypes.GetById);
             return await _connection.QueryFirstOrDefaultAsync<T>
                   (procedureName.ToString(), new { Id=id}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }
-        public async Task<T> Insert(T parameters)
+        public virtual async Task<T> Insert(T parameters)
         {
             var procedureName = ProcedureName(ProcedureTypes.Insert);
             return await _connection.QueryFirstOrDefaultAsync<T>
                   (procedureName.ToString(), parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }
-        public async Task<T> Update(T parameters)
+        public virtual async Task<T> Update(T parameters)
         {
             var procedureName = ProcedureName(ProcedureTypes.Update);
             return await _connection.QueryFirstOrDefaultAsync<T>
                   (procedureName.ToString(), parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
            
         }
-        public async Task<T> HardDeleteById(int id)
+        public virtual async Task<T> DeleteById(int id)
         {
             var deletedData = await GetById(id);
-            var procedureName = ProcedureName(ProcedureTypes.HardDeleteById);
+            var procedureName = ProcedureName(ProcedureTypes.DeleteById);
             _connection.Execute(procedureName.ToString(), new {Id=id }, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
             return deletedData;
         }
@@ -132,7 +132,7 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
             _connection = new SqlConnection(connectionString);
         }
 
-        public async Task<T> Insert(T entity)
+        public virtual async Task<T> Insert(T entity)
         {
             string keyColumn = GetKeyColumnName();
             string tableName = GetTableName();
@@ -144,7 +144,7 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
 
         }
 
-        public async Task<T> HardDeleteById(int id)
+        public virtual async Task<T> DeleteById(int id)
         {
             string tableName = GetTableName();
             string keyColumn = GetKeyColumnName();
@@ -155,14 +155,14 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
             return deletedData;
         }
 
-        public async Task<IEnumerable<T>> GetAll()
+        public virtual async Task<IEnumerable<T>> GetAll()
         {
             string tableName = GetTableName();
             string query = $""SELECT * FROM {tableName}"";
             return await _connection.QueryAsync<T>(query);
         }
 
-        public async Task<T> GetById(int Id)
+        public virtual async Task<T> GetById(int Id)
         {
             string tableName = GetTableName();
             string keyColumn = GetKeyColumnName();
@@ -170,7 +170,7 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
             return await _connection.QueryFirstOrDefaultAsync<T>(query);
         }
 
-        public async Task<T> Update(T entity)
+        public virtual async Task<T> Update(T entity)
         {
 
             string tableName = GetTableName();
@@ -331,24 +331,24 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
     {
   private readonly ApplicationContext _context = new ApplicationContext();
 
-        public async Task<T> Insert(T entity)
+        public virtual async Task<T> Insert(T entity)
         {
             _context.Set<T>().Add(entity);
             _context.SaveChanges();
             return entity;
         }
 
-        public async Task<IEnumerable<T>> GetAll()
+        public virtual async Task<IEnumerable<T>> GetAll()
         {
             return await _context.Set<T>().ToListAsync();
         }
 
-        public async Task<T> GetById(int id)
+        public virtual async Task<T> GetById(int id)
         {
             return await _context.Set<T>().FindAsync(id);
         }
 
-        public async Task<T> Update(T entity)
+        public virtual async Task<T> Update(T entity)
         {
             var keyValue = GetKeyValueAsInt(entity);
             var retrievedEntity = await GetById(keyValue.Value);
@@ -356,7 +356,7 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
             await _context.SaveChangesAsync();
             return updateData;
         }
-        public async Task<T> HardDeleteById(int id)
+        public virtual async Task<T> DeleteById(int id)
         {
             var deletedData = await GetById(id);
             _context.Set<T>().Remove(deletedData);

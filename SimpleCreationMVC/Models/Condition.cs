@@ -10,6 +10,6 @@
         public bool? isInsertProcedureAllowed { get; set; } = true;
         public bool? isUpdateProcedureAllowed { get; set; } = true;
         public bool? isGetByIdProcedureAllowed { get; set; } = true;
-        public bool? isHardDeleteByIdProcedureAllowed { get; set; } = true;
+        public bool? isDeleteByIdProcedureAllowed { get; set; } = true;
     }
 }

@@ -55,9 +55,9 @@ namespace Project."+FolderNames.Services+@"
         {
             return await "+ repositoryName + @".GetById(id);
         }
-        public async Task<"+ tableName + @"> HardDeleteById(int id)
+        public async Task<"+ tableName + @"> DeleteById(int id)
         {
-              return await  " + repositoryName + @".HardDeleteById(id);
+              return await  " + repositoryName + @".DeleteById(id);
         }
     }
 }";

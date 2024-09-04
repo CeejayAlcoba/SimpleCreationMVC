@@ -100,14 +100,14 @@ namespace Project.Controllers
             }
         }
         [HttpDelete(""{id}"")]
-        public async Task<IActionResult> HardDeleteById" + table + @"(int id)
+        public async Task<IActionResult> DeleteById" + table + @"(int id)
         {
             try
             {
                 var data = await " + serviceName + @".GetById(id);
                 if (data == null) return NotFound();
 
-                var deletedData = await " + serviceName + @".HardDeleteById(id);
+                var deletedData = await " + serviceName + @".DeleteById(id);
                 return Ok(deletedData);
             }
             catch (Exception ex)

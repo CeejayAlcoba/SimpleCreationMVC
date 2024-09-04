@@ -4,7 +4,7 @@
     {
         Insert,
         Update, 
-        HardDeleteById,
+        DeleteById,
         GetAll,
         GetById,
     }
