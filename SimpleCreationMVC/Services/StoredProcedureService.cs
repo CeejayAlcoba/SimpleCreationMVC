@@ -138,7 +138,7 @@ namespace SimpleCreation.Services
         }
         private string CreateProcedureInsertFile(TableSchema tableSchema,List<string> currentProcedures )
         {
-            var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
+            var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.Insert.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
             StringBuilder columns = new StringBuilder();
@@ -146,7 +146,7 @@ namespace SimpleCreation.Services
             for (int i = 0; i < tableSchema.Columns.Count; i++)
             {
                 var column = tableSchema.Columns[i];
-                if (primaryKey == column.COLUMN_NAME) continue;
+                if (primaryKey.COLUMN_NAME == column.COLUMN_NAME) continue;
 
                 columns.Append($"{column.COLUMN_NAME}");
                 if (i < tableSchema.Columns.Count - 1)
@@ -158,7 +158,7 @@ namespace SimpleCreation.Services
             for (int i = 0; i < tableSchema.Columns.Count; i++)
             {
                 var column = tableSchema.Columns[i];
-                if (primaryKey == column.COLUMN_NAME) continue;
+                if (primaryKey.COLUMN_NAME == column.COLUMN_NAME) continue;
 
                 values.Append($"@{column.COLUMN_NAME}");
                 if (i < tableSchema.Columns.Count - 1)
@@ -166,15 +166,16 @@ namespace SimpleCreation.Services
                     values.Append($",");
                 }
             }
-
-            string parameters = SqlService.GetColumnParameterSP(tableSchema.Columns);
+            var filteredColumns = tableSchema.Columns.Where(c => c.COLUMN_NAME != primaryKey.COLUMN_NAME).ToList();
+            string parameters = SqlService.GetColumnParameterSP(filteredColumns);
             StringBuilder text = new StringBuilder($@"
              {alterOrCreate} PROCEDURE {procedureName}
+             @{primaryKey.COLUMN_NAME} {primaryKey.DATA_TYPE} = NULL,
              {parameters}
              AS
                 INSERT INTO {tableSchema.TABLE_NAME}({columns})
                 VALUES ({values})
-                SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey} = SCOPE_IDENTITY()
+                SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey.COLUMN_NAME} = SCOPE_IDENTITY()
              GO
             ");
 
