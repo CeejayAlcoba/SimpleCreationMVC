@@ -333,8 +333,8 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
 
         public virtual async Task<T> Insert(T entity)
         {
-            _context.Set<T>().Add(entity);
-            _context.SaveChanges();
+            await _context.Set<T>().AddAsync(entity);
+            await _context.SaveChangesAsync();
             return entity;
         }
 
@@ -360,6 +360,7 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
         {
             var deletedData = await GetById(id);
             _context.Set<T>().Remove(deletedData);
+            await _context.SaveChangesAsync();
             return deletedData;
         }
         private int? GetKeyValueAsInt(T entity)
