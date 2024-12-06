@@ -5,7 +5,7 @@ using SimpleCreation.Models;
 using SimpleCreation.Services;
 using SimpleCreationMVC.Services;
 
-namespace SimpleCreationMVC.Controllers
+namespace SimpleCreationMVC.ApiControllers
 {
     [Route("api/front-end")]
     [ApiController]

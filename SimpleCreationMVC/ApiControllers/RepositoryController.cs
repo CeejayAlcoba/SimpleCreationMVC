@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 
-namespace SimpleCreationMVC.Controllers
+namespace SimpleCreationMVC.ApiControllers
 {
     [Route("api/repository")]
     [ApiController]

@@ -3,22 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 
-namespace SimpleCreationMVC.Controllers
+namespace SimpleCreationMVC.ApiControllers
 {
-    [Route("api/controller")]
+    [Route("api/service")]
     [ApiController]
-    public class ControllerController : ControllerBase
+    public class ServiceController : ControllerBase
     {
         [HttpPost("create")]
-        public IActionResult CreateController([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
+        public IActionResult CreateService([FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
                 FileService _fileService = new FileService();
-                ControllerService _controllerService = new ControllerService(connectionString);
+                ServiceService _serviceService = new ServiceService();
 
                 _fileService.Delete();
-               _controllerService.CreateWebApisControllerFiles(tableSchemas);
+                _serviceService.CreateServicesFiles(tableSchemas);
 
                 return Ok();
             }

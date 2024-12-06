@@ -3,7 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 
-namespace SimpleCreation.Controllers
+namespace SimpleCreation.ApiControllers
 {
     [Route("api/ef-core")]
     public class EFCoreController : Controller

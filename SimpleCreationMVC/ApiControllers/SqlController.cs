@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 
-namespace SimpleCreation.Controllers
+namespace SimpleCreation.ApiControllers
 {
     [Route("api/sql")]
     [ApiController]

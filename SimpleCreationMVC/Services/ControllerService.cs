@@ -30,7 +30,7 @@ using Microsoft.AspNetCore.Mvc;
 using Project."+FolderNames.Models.ToString()+ @";
 using Project."+FolderNames.Services.ToString()+@";
 
-namespace Project.Controllers
+namespace Project.ApiControllers
 {
     [Route(""api/" + textService.ToKebabCase(table) + @""")]
     [ApiController]

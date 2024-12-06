@@ -1,8 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using SimpleCreation.Models;
-using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
 
 namespace SimpleCreation.Services
@@ -20,7 +18,8 @@ namespace SimpleCreation.Services
         {
             List<TableSchema> tableSchemas = new List<TableSchema>();
             string tablesQuery = $@"SELECT TABLE_NAME
-                             FROM INFORMATION_SCHEMA.TABLES";
+                             FROM INFORMATION_SCHEMA.TABLES
+                             ORDER BY TABLE_NAME";
           
             var tables =  connection.Query<string>(tablesQuery);
 
@@ -65,7 +64,7 @@ namespace SimpleCreation.Services
                 }
                 if (i < columns.Count-1)
                 {
-                    columnParameter.Append($",\n\t");
+                    columnParameter.Append($",\n");
                 }
             }
             return columnParameter.ToString();

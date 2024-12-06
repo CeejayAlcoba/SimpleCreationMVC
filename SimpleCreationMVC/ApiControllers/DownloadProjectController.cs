@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Services;
 
-namespace SimpleCreationMVC.Controllers
+namespace SimpleCreationMVC.ApiControllers
 {
     [Route("api/download-project")]
     [ApiController]

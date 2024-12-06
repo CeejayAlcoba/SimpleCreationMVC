@@ -57,12 +57,12 @@ namespace SimpleCreation.Services
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
             string primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
             StringBuilder text = new StringBuilder($@"
-             {alterOrCreate} PROCEDURE {procedureName}
-             @Id INT
-             AS
-                SELECT * FROM {tableSchema.TABLE_NAME}
-                WHERE {primaryKey} = @Id
-             GO
+{alterOrCreate} PROCEDURE {procedureName}
+@Id INT
+AS
+   SELECT * FROM {tableSchema.TABLE_NAME}
+   WHERE {primaryKey} = @Id
+GO
             ");
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
 
@@ -80,22 +80,23 @@ namespace SimpleCreation.Services
                 var column = tableSchema.Columns[i];
                 if (primaryKey == column.COLUMN_NAME) continue;
 
-                setValues.Append($"{column.COLUMN_NAME}=@{column.COLUMN_NAME}");
+                setValues.Append($"\t\t{column.COLUMN_NAME}=@{column.COLUMN_NAME}");
                 if (i < tableSchema.Columns.Count - 1)
                 {
-                    setValues.Append($",");
+                    setValues.Append($",\n");
                 }
             }
             string parameters = SqlService.GetColumnParameterSP(tableSchema.Columns);
             StringBuilder text = new StringBuilder($@"
-             {alterOrCreate} PROCEDURE {procedureName}
-             {parameters}
-             AS
-                UPDATE {tableSchema.TABLE_NAME}
-                SET {setValues}
-                WHERE {primaryKey} = @{primaryKey}
-                SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey} = @Id
-             GO
+{alterOrCreate} PROCEDURE {procedureName}
+{parameters}
+AS
+   UPDATE {tableSchema.TABLE_NAME}
+   SET 
+{setValues}
+    WHERE {primaryKey} = @{primaryKey}
+    SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey} = @Id
+ GO
             ");
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
 
@@ -107,11 +108,11 @@ namespace SimpleCreation.Services
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
 
             StringBuilder text = new StringBuilder($@"
-             {alterOrCreate} PROCEDURE {procedureName}
-             AS
-                SELECT * FROM {tableSchema.TABLE_NAME}
-             GO
-            ");
+{alterOrCreate} PROCEDURE {procedureName}
+AS
+    SELECT * FROM {tableSchema.TABLE_NAME}
+GO
+");
 
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
 
@@ -124,12 +125,12 @@ namespace SimpleCreation.Services
 
             var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
             StringBuilder text = new StringBuilder($@"
-             {alterOrCreate} PROCEDURE {procedureName}
-                @Id INT
-             AS
-                DELETE FROM {tableSchema.TABLE_NAME}
-                WHERE {primaryKey} =  @Id
-             GO
+{alterOrCreate} PROCEDURE {procedureName}
+    @Id INT
+AS
+    DELETE FROM {tableSchema.TABLE_NAME}
+    WHERE {primaryKey} =  @Id
+GO
             ");
 
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
@@ -148,10 +149,10 @@ namespace SimpleCreation.Services
                 var column = tableSchema.Columns[i];
                 if (primaryKey.COLUMN_NAME == column.COLUMN_NAME) continue;
 
-                columns.Append($"{column.COLUMN_NAME}");
+                columns.Append($"\t\t{column.COLUMN_NAME}");
                 if (i < tableSchema.Columns.Count - 1)
                 {
-                    columns.Append($",");
+                    columns.Append($",\n");
                 }
             }
 
@@ -160,23 +161,27 @@ namespace SimpleCreation.Services
                 var column = tableSchema.Columns[i];
                 if (primaryKey.COLUMN_NAME == column.COLUMN_NAME) continue;
 
-                values.Append($"@{column.COLUMN_NAME}");
+                values.Append($"\t\t@{column.COLUMN_NAME}");
                 if (i < tableSchema.Columns.Count - 1)
                 {
-                    values.Append($",");
+                    values.Append($",\n");
                 }
             }
             var filteredColumns = tableSchema.Columns.Where(c => c.COLUMN_NAME != primaryKey.COLUMN_NAME).ToList();
             string parameters = SqlService.GetColumnParameterSP(filteredColumns);
             StringBuilder text = new StringBuilder($@"
-             {alterOrCreate} PROCEDURE {procedureName}
-             @{primaryKey.COLUMN_NAME} {primaryKey.DATA_TYPE} = NULL,
-             {parameters}
-             AS
-                INSERT INTO {tableSchema.TABLE_NAME}({columns})
-                VALUES ({values})
-                SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey.COLUMN_NAME} = SCOPE_IDENTITY()
-             GO
+{alterOrCreate} PROCEDURE {procedureName}
+    @{primaryKey.COLUMN_NAME} {primaryKey.DATA_TYPE} = NULL,
+{parameters}
+AS
+   INSERT INTO {tableSchema.TABLE_NAME}(
+{columns}
+        )
+   VALUES (
+{values}
+        )
+   SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey.COLUMN_NAME} = SCOPE_IDENTITY()
+GO
             ");
 
             fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());

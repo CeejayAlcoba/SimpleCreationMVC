@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Services;
 using System.IO.Compression;
 
-namespace SimpleCreation.Controllers
+namespace SimpleCreation.ApiControllers
 {
     [Route("api/system")]
     [ApiController]

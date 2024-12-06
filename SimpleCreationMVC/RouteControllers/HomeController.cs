@@ -2,7 +2,7 @@
 using SimpleCreationMVC.Models;
 using System.Diagnostics;
 
-namespace SimpleCreationMVC.Controllers
+namespace SimpleCreationMVC.RouteControllers
 {
     public class HomeController : Controller
     {
