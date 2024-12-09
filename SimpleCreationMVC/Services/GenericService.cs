@@ -376,29 +376,5 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
 }";
             fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
         }
-
-        public void CreateDapperNote()
-        {
-            string text = @"NuGet Packages Required
-
-The project should download the following NuGet packages:
-
-PM> Install-Package Dapper
-PM> Install-Package Microsoft.Data.SqlClient";
-
-            fileService.Create("", "ReadMe.txt", text);
-        }
-        public void CreateEFCoreNote()
-        {
-            string text = @"NuGet Packages Required
-
-The project should download the following NuGet packages:
-
-PM> Install-Package Microsoft.EntityFrameworkCore
-PM> Install-Package Microsoft.EntityFrameworkCore.Tools
-PM> Install-Package Microsoft.EntityFrameworkCore.SqlServer";
-
-            fileService.Create("", "ReadMe.txt", text);
-        }
     }
 }

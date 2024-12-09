@@ -10,6 +10,7 @@
         Controllers,
         ApplicationContexts,
         JsClasses,
-        TsTypes
+        TsTypes,
+        Utilities
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
+using SimpleCreationMVC.Services;
 
 namespace SimpleCreation.ApiControllers
 {
@@ -21,14 +22,17 @@ namespace SimpleCreation.ApiControllers
                 RepositoryService _repositoryService = new RepositoryService();
                 ServiceService _serviceService = new ServiceService();
                 ControllerService _controllerService = new ControllerService(connectionString);
+                ReadMeService _readMeService = new ReadMeService();
+                UtilityService _utilityService = new UtilityService();
 
                 _fileService.Delete();
                 _genericService.CreateDapperQueryGeneric();
-                _genericService.CreateDapperNote();
                 _modelService.CreateModelClassesFiles(tableSchemas);
                 _repositoryService.CreateRepositoriesFiles(tableSchemas);
                 _serviceService.CreateServicesFiles(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
+                _utilityService.CreateAutoMapperConfigFile();
+                _readMeService.CreateDapperNote();
 
                 return Ok();
             }

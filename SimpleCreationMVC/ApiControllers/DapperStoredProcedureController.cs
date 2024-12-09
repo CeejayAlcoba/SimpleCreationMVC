@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
+using SimpleCreationMVC.Services;
 using System.IO;
 
 namespace SimpleCreation.ApiControllers
@@ -22,16 +23,19 @@ namespace SimpleCreation.ApiControllers
                 StoredProcedureService _storedProcedureService = new StoredProcedureService(connectionString);
                 ServiceService _serviceService = new ServiceService();
                 ControllerService _controllerService = new ControllerService(connectionString);
+                ReadMeService _readMeService = new ReadMeService();
+                UtilityService _utilityService = new UtilityService();
 
                 _fileService.Delete();
                 _genericService.CreateProcedureGeneric();
-                _genericService.CreateDapperNote();
                 _modelService.CreateModelClassesFiles(tableSchemas);
                 _repositoryService.CreateRepositoryStoredProcedureFile(tableSchemas);
                 _storedProcedureService.CreateStoredProceduresFiles(tableSchemas);
                 _storedProcedureService.CreateEnumProceduresFile();
                 _serviceService.CreateServicesFiles(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
+                _utilityService.CreateAutoMapperConfigFile();
+                _readMeService.CreateDapperNote();
 
                 return Ok();
             }
