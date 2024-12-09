@@ -3,8 +3,8 @@
     public enum FolderNames
     {
         Models,
-        StoredProcedures,
-        Enums,
+        ProcedureQueries,
+        ProcedureEnums,
         Repositories,
         Services,
         Controllers,

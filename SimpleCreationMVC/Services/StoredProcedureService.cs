@@ -49,7 +49,7 @@ namespace SimpleCreation.Services
                     allSp.AppendLine(text);
                 }
             }
-            fileService.Create(FolderNames.StoredProcedures.ToString(), $"All.sql", allSp.ToString());
+            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"All.sql", allSp.ToString());
         }
         private string CreateProcedureGetByIdFile(TableSchema tableSchema, List<string> currentProcedures)
         {
@@ -64,7 +64,7 @@ AS
    WHERE {primaryKey} = @Id
 GO
             ");
-            fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -98,7 +98,7 @@ AS
     SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey} = @Id
  GO
             ");
-            fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -114,7 +114,7 @@ AS
 GO
 ");
 
-            fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -128,12 +128,13 @@ GO
 {alterOrCreate} PROCEDURE {procedureName}
     @Id INT
 AS
+    
     DELETE FROM {tableSchema.TABLE_NAME}
     WHERE {primaryKey} =  @Id
 GO
             ");
 
-            fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -184,39 +185,42 @@ AS
 GO
             ");
 
-            fileService.Create(FolderNames.StoredProcedures.ToString(), $"{procedureName}.sql", text.ToString());
+            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
-        public void CreateEnumProcedureFile()
+        public void CreateEnumProceduresFile()
         {
-            var procedures = SqlService.GetAllCurentStoredProcesures();
-            StringBuilder text = new StringBuilder();
-            StringBuilder procedureText = new StringBuilder();
-            var tables = new List<string>();
-            foreach (var procedure in procedures)
+            var tables = SqlService.GetAllTableSchema();
+            foreach(var table  in tables)
             {
-                var tableName = procedure.Split("_")[0];
-                if (!tables.Contains(tableName))
-                {
-                    procedureText.AppendLine($"\n\t\t//---{tableName}---//");
-                }
-                procedureText.AppendLine($"\t\t{procedure},");
+                var tableName = table.TABLE_NAME;
+                var procedures = SqlService.GetStoredProceduresByTable(tableName);
 
-                tables.Add(tableName);
+               
+                    StringBuilder text = new StringBuilder();
+
+                    text.AppendLine($@"
+namespace Project.{FolderNames.ProcedureEnums}
+{{
+    // Procedures for the {tableName} table
+    public enum {tableName}Procedures
+    {{
+");
+
+                    foreach (var procedure in procedures)
+                    {
+                        text.AppendLine($"        {procedure},");
+                    }
+
+                    text.AppendLine($@"
+    }}
+}}");
+                    fileService.Create(FolderNames.ProcedureEnums.ToString(), $"{tableName}Procedures.cs", text.ToString());
             }
-
-       
-            text.AppendLine($"namespace Project.{FolderNames.Enums.ToString()}");
-            text.AppendLine("{");
-            text.AppendLine($"    public enum StoredProcedures");
-            text.AppendLine("     {");
-            text.AppendLine($"{procedureText}");
-            text.AppendLine("     }");
-            text.AppendLine("}");
-
-            fileService.Create(FolderNames.Enums.ToString(), "StoredProcedures.cs", text.ToString());
         }
+
+
         private string AlterOrCreate(List<string> currentProcedures, string procedureName)
         {
             return currentProcedures.Contains(procedureName) ? "ALTER" : "CREATE";

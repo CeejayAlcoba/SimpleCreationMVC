@@ -25,10 +25,11 @@ namespace SimpleCreation.ApiControllers
 
                 _fileService.Delete();
                 _genericService.CreateProcedureGeneric();
+                _genericService.CreateDapperNote();
                 _modelService.CreateModelClassesFiles(tableSchemas);
-                _repositoryService.CreateRepositoriesFiles(tableSchemas);
+                _repositoryService.CreateRepositoryStoredProcedureFile(tableSchemas);
                 _storedProcedureService.CreateStoredProceduresFiles(tableSchemas);
-                _storedProcedureService.CreateEnumProcedureFile();
+                _storedProcedureService.CreateEnumProceduresFile();
                 _serviceService.CreateServicesFiles(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
 

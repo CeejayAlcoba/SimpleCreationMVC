@@ -18,98 +18,71 @@ namespace SimpleCreation.Services
         public GenericService(string connectionString)
         {
             this.sqlService = new SqlService(connectionString);
-            this.connectionString =connectionString;
+            this.connectionString = connectionString;
             this.modifiedConnectionString = connectionString.Replace("\\", "\\\\"); ;
-        }
-        private void CreateProcedureTypeEnum()
-        {
-            string text = @"
-namespace Project."+ FolderNames.Enums+@"
-{
-    public enum ProcedureTypes
-    {
-        Insert,
-        Update, 
-        DeleteById,
-        GetAll,
-        GetById,
-    }
-}
-";
-            fileService.Create(FolderNames.Enums.ToString(),"ProcedureType.cs", text);
         }
         public void CreateProcedureGeneric()
         {
-            CreateDapperNote();
-            CreateProcedureTypeEnum();
-            StringBuilder strConnecyionString = new StringBuilder();
 
-            string text = @"
+            string text = $@"
 using Dapper;
 using Microsoft.Data.SqlClient;
-using Project." + FolderNames.Enums.ToString() + @";
+using Project.{FolderNames.Models};
+using Project.{FolderNames.ProcedureEnums};
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Data;
-namespace Project." + FolderNames.Repositories.ToString() + @"
-{
-    public class GenericRepository<T> where T : class
-    {
-        public IDbConnection _connection;" + $@"
-         private readonly string connectionString = """+modifiedConnectionString+@""";
-" +
-@"
-       public GenericRepository()
-        {
-          _connection = new SqlConnection(connectionString);
-        }
 
-        private readonly int _commandTimeout = 120;
-        private string ProcedureName (ProcedureTypes procedureType) {
-            string tableName = typeof(T).Name;
-            return $""{tableName}_{procedureType.ToString()}""; 
-        }
-        public virtual async Task<IEnumerable<T>> GetAll()
-        {
-            var procedureName = ProcedureName(ProcedureTypes.GetAll);
-            var result = await _connection.QueryAsync<T>(procedureName, commandTimeout: _commandTimeout,
-            commandType: CommandType.StoredProcedure);
+namespace Project.{FolderNames.Repositories}
+{{
+    public class GenericRepository<T,TProcedures>
+        where T : class
+        where TProcedures : struct, Enum
+    {{
+        public readonly IDbConnection _connection;
+        public readonly int _commandTimeout = 120;
 
-            return result.ToList();
-        }
+        public GenericRepository()
+        {{
+            _connection = new SqlConnection(""{modifiedConnectionString}"");
+        }}
 
-        public virtual async Task<T> GetById(int id)
-        {
-            var procedureName = ProcedureName(ProcedureTypes.GetById);
-            return await _connection.QueryFirstOrDefaultAsync<T>
-                  (procedureName.ToString(), new { Id=id}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
-        }
-        public virtual async Task<T> Insert(T parameters)
-        {
-            var procedureName = ProcedureName(ProcedureTypes.Insert);
-            return await _connection.QueryFirstOrDefaultAsync<T>
-                  (procedureName.ToString(), parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
-        }
-        public virtual async Task<T> Update(T parameters)
-        {
-            var procedureName = ProcedureName(ProcedureTypes.Update);
-            return await _connection.QueryFirstOrDefaultAsync<T>
-                  (procedureName.ToString(), parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
-           
-        }
-        public virtual async Task<T> DeleteById(int id)
-        {
-            var deletedData = await GetById(id);
-            var procedureName = ProcedureName(ProcedureTypes.DeleteById);
-            _connection.Execute(procedureName.ToString(), new {Id=id }, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
-            return deletedData;
-        }
-    }
-}";
-            fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
+        // Get All
+        public async Task<IEnumerable<T>> GetAll(TProcedures procedureName)
+        {{
+            return await _connection.QueryAsync<T>(procedureName.ToString(), commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
 
+        // Get By ID
+        public async Task<T?> GetById(TProcedures procedureName,int id)
+        {{
+            return await _connection.QueryFirstOrDefaultAsync<T>(procedureName.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        // Insert
+        public async Task<T?> Insert(TProcedures procedureName,T entity)
+        {{
+            return await _connection.QueryFirstOrDefaultAsync<T>(procedureName.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        // Update
+        public async Task<T?> Update(TProcedures procedureName,T entity)
+        {{
+            return await _connection.QueryFirstOrDefaultAsync<T>(procedureName.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        // Delete By ID
+        public async Task DeleteById(TProcedures procedureName,int id)
+        {{
+            await _connection.ExecuteAsync(procedureName.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+    }}
+}}";
+            fileService.Create(FolderNames.Repositories.ToString(), $"GenericRepository.cs", text);
+            
         }
         public void CreateDapperQueryGeneric()
         {
-            CreateDapperNote();
             string text = @"
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -119,13 +92,13 @@ using System.Text;
 using Dapper;
 using Microsoft.Data.SqlClient;
 
-namespace Project."+FolderNames.Repositories.ToString()+ @"
+namespace Project." + FolderNames.Repositories.ToString() + @"
 {
     public class GenericRepository<T> where T : class
     {
-        IDbConnection _connection;
+        public IDbConnection _connection;
 
-          private readonly string connectionString = """ + modifiedConnectionString + @""";
+        private readonly string connectionString = """ + modifiedConnectionString + @""";
 
         public GenericRepository()
         {
@@ -286,21 +259,21 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
 }";
             fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
         }
-        private void CreateEFCoreContext()
+        public void CreateEFCoreContext()
         {
             StringBuilder dbSetText = new StringBuilder();
             var tables = sqlService.GetAllTableSchema();
             foreach (var table in tables)
             {
-                dbSetText.AppendLine("\t\tpublic DbSet<"+table.TABLE_NAME+"> "+table.TABLE_NAME+" { get; set; }");
+                dbSetText.AppendLine("\t\tpublic DbSet<" + table.TABLE_NAME + "> " + table.TABLE_NAME + " { get; set; }");
             }
 
             string text = @"
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using Project." + FolderNames.Models.ToString()+@";
+using Project." + FolderNames.Models.ToString() + @";
 
-namespace Project."+FolderNames.ApplicationContexts.ToString()+ @"
+namespace Project." + FolderNames.ApplicationContexts.ToString() + @"
 {
     public class ApplicationContext : DbContext
     {
@@ -319,13 +292,11 @@ namespace Project."+FolderNames.ApplicationContexts.ToString()+ @"
         }
         public void CreateEFCoreGeneric()
         {
-            CreateEFCoreNote();
-            CreateEFCoreContext();
             string text = @"
 using Microsoft.EntityFrameworkCore;
-using Project."+FolderNames.ApplicationContexts.ToString()+@";
+using Project." + FolderNames.ApplicationContexts.ToString() + @";
 
-namespace Project."+FolderNames.Repositories.ToString()+ @"
+namespace Project." + FolderNames.Repositories.ToString() + @"
 {
     public class GenericRepository<T> where T : class
     {
@@ -406,7 +377,7 @@ namespace Project."+FolderNames.Repositories.ToString()+ @"
             fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
         }
 
-        private void CreateDapperNote()
+        public void CreateDapperNote()
         {
             string text = @"NuGet Packages Required
 
@@ -417,7 +388,7 @@ PM> Install-Package Microsoft.Data.SqlClient";
 
             fileService.Create("", "ReadMe.txt", text);
         }
-        private void CreateEFCoreNote()
+        public void CreateEFCoreNote()
         {
             string text = @"NuGet Packages Required
 

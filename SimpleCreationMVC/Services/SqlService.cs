@@ -46,7 +46,18 @@ namespace SimpleCreation.Services
                             WHERE ROUTINE_TYPE = 'PROCEDURE'";
             return connection.Query<string>(query).OrderBy(_ => _).ToList();
         }
+        public List<string> GetStoredProceduresByTable(string tableName)
+        {
+            string query = @"
+        SELECT SPECIFIC_NAME
+        FROM INFORMATION_SCHEMA.ROUTINES
+        WHERE ROUTINE_TYPE = 'PROCEDURE'
+        AND SPECIFIC_NAME LIKE @TableName + '%';"; 
 
+            var storedProcedures = connection.Query<string>(query, new { TableName = tableName }).ToList();
+
+            return storedProcedures.OrderBy(sp => sp).ToList();
+        }
         public string GetColumnParameterSP(List<Column> columns)
         {
             StringBuilder columnParameter = new StringBuilder();

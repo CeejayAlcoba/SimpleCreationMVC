@@ -24,6 +24,7 @@ namespace SimpleCreation.ApiControllers
 
                 _fileService.Delete();
                 _genericService.CreateDapperQueryGeneric();
+                _genericService.CreateDapperNote();
                 _modelService.CreateModelClassesFiles(tableSchemas);
                 _repositoryService.CreateRepositoriesFiles(tableSchemas);
                 _serviceService.CreateServicesFiles(tableSchemas);

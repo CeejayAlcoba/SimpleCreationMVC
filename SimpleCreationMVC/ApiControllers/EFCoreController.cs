@@ -21,7 +21,9 @@ namespace SimpleCreation.ApiControllers
                 ControllerService _controllerService = new ControllerService(connectionString);
 
                 _fileService.Delete();
+                _genericService.CreateEFCoreContext();
                 _genericService.CreateEFCoreGeneric();
+                _genericService.CreateEFCoreNote();
                 _modelService.CreateModelClassesFiles(tableSchemas);
                 _repositoryService.CreateRepositoriesFiles(tableSchemas);
                 _serviceService.CreateServicesFiles(tableSchemas);

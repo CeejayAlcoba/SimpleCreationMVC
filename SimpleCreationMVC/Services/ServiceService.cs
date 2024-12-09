@@ -26,41 +26,43 @@ namespace SimpleCreation.Services
             string repositoryName = $"_{textService.ToCamelCase(repository)}";
             string serviceName = $"{tableName}Service";
 
-            string text = @"
-using Project."+FolderNames.Models+@";
-using Project."+FolderNames.Repositories+@";
+            string text = $@"
+using Project.{FolderNames.Models};
+using Project.{FolderNames.Repositories};
 
-namespace Project."+FolderNames.Services+@"
-{
-    public class "+ serviceName + @"
-    {
-        private readonly "+ repository + @" "+ repositoryName + @" = new "+ repository+@"();
+namespace Project.{FolderNames.Services}
+{{
+    public class {serviceName}
+    {{
+        private readonly {repository} {repositoryName} = new {repository}();
 
-        public async Task<" + tableName + @"> Insert("+ tableName + @" data)
-        {
-           return await " + repositoryName + @".Insert(data);
-        }
+        public async Task<{tableName}?> Insert({tableName} data)
+        {{
+            return await {repositoryName}.Insert(data);
+        }}
 
-        public async Task<"+ tableName + @"> Update("+ tableName + @" data)
-        {
-            return await " + repositoryName + @".Update(data);
-        }
+        public async Task<{tableName}?> Update({tableName} data)
+        {{
+            return await {repositoryName}.Update(data);
+        }}
 
-        public async Task<IEnumerable<"+ tableName + @">> GetAll()
-        {
-            return await "+ repositoryName + @".GetAll();
-        }
+        public async Task<IEnumerable<{tableName}>> GetAll()
+        {{
+            return await {repositoryName}.GetAll();
+        }}
 
-        public async Task<"+ tableName + @"> GetById(int id)
-        {
-            return await "+ repositoryName + @".GetById(id);
-        }
-        public async Task<"+ tableName + @"> DeleteById(int id)
-        {
-              return await  " + repositoryName + @".DeleteById(id);
-        }
-    }
-}";
+        public async Task<{tableName}?> GetById(int id)
+        {{
+            return await {repositoryName}.GetById(id);
+        }}
+
+        public async Task<{tableName}?> DeleteById(int id)
+        {{
+            return await {repositoryName}.DeleteById(id);
+        }}
+    }}
+}}";
+
             return text;
         }
     }
