@@ -1,5 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
+using SimpleCreationMVC.Services;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -9,53 +10,52 @@ namespace SimpleCreation.Services
 {
     public class StoredProcedureService
     {
-        private readonly SqlService SqlService;
-        private readonly FileService fileService = new FileService();
+        private readonly SqlService _sqlService;
+        private readonly FileService _fileService = new FileService();
+        private readonly TableValuedParameterService _tableValuedParameterService = new TableValuedParameterService();
         public StoredProcedureService(string connectionString) { 
-        
-        this.SqlService = new SqlService(connectionString);
+          _sqlService = new SqlService(connectionString);
         }
         public void CreateStoredProceduresFiles(List<TableSchema> tableSchemas)
         {
-            var currentProcedures = SqlService.GetAllCurentStoredProcesures();
-            StringBuilder allSp = new StringBuilder();
+            var currentProcedures = _sqlService.GetAllCurentStoredProcesures();
+            StringBuilder queries = new StringBuilder();
             foreach (var tableSchema in tableSchemas)
             {
                 var tableName = tableSchema.TABLE_NAME;
 
-                if (tableSchema.isGetAllProcedureAllowed == true)
-                {
-                    string text = CreateProcedureGetAllFile(tableSchema, currentProcedures);
-                    allSp.AppendLine(text);
-                }
-                if (tableSchema.isInsertProcedureAllowed == true)
-                {
-                    string text = CreateProcedureInsertFile(tableSchema, currentProcedures);
-                    allSp.AppendLine(text);
-                }
-                if(tableSchema.isUpdateProcedureAllowed == true)
-                {
-                    string text = CreateProcedureUpdateFile(tableSchema, currentProcedures);
-                    allSp.AppendLine(text);
-                }
-                if(tableSchema.isGetByIdProcedureAllowed == true)
-                {
-                    string text = CreateProcedureGetByIdFile(tableSchema, currentProcedures);
-                    allSp.AppendLine(text);
-                }
-                if (tableSchema.isDeleteByIdProcedureAllowed == true)
-                {
-                    string text = CreateProcedureDeleteByIdFile(tableSchema, currentProcedures);
-                    allSp.AppendLine(text);
-                }
+                string strGetAll = CreateProcedureGetAllFile(tableSchema, currentProcedures);
+                queries.AppendLine(strGetAll);
+               
+                string strInsert = CreateProcedureInsertFile(tableSchema, currentProcedures);
+                queries.AppendLine(strInsert);
+               
+                string strUpdate = CreateProcedureUpdateFile(tableSchema, currentProcedures);
+                queries.AppendLine(strUpdate);
+               
+                string strGetById = CreateProcedureGetByIdFile(tableSchema, currentProcedures);
+                queries.AppendLine(strGetById);
+               
+                string strDeleteById = CreateProcedureDeleteByIdFile(tableSchema, currentProcedures);
+                queries.AppendLine(strDeleteById);
+
+                string strTVP = _tableValuedParameterService.CreateTVPFile(tableSchema);
+                queries.AppendLine(strTVP);
+
+                string strInsertMany = CreateProcedureInsertManyFile(tableSchema, currentProcedures);
+                queries.AppendLine(strInsertMany);
+
+                string strUpdateMany = CreateProcedureUpdateManyFile(tableSchema, currentProcedures);
+                queries.AppendLine(strUpdateMany);
+
             }
-            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"All.sql", allSp.ToString());
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"All.sql", queries.ToString());
         }
         private string CreateProcedureGetByIdFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetById.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
-            string primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
+            string primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
             StringBuilder text = new StringBuilder($@"
 {alterOrCreate} PROCEDURE {procedureName}
 @Id INT
@@ -64,7 +64,7 @@ AS
    WHERE {primaryKey} = @Id
 GO
             ");
-            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -72,7 +72,7 @@ GO
         {
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.Update.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
-            string primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
+            string primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
             StringBuilder setValues = new StringBuilder();
 
             for (int i = 0; i < tableSchema.Columns.Count; i++)
@@ -86,7 +86,7 @@ GO
                     setValues.Append($",\n");
                 }
             }
-            string parameters = SqlService.GetColumnParameterSP(tableSchema.Columns);
+            string parameters = _sqlService.GetColumnParameterSP(tableSchema.Columns);
             StringBuilder text = new StringBuilder($@"
 {alterOrCreate} PROCEDURE {procedureName}
 {parameters}
@@ -98,7 +98,7 @@ AS
     SELECT * FROM {tableSchema.TABLE_NAME} WHERE {primaryKey} = @Id
  GO
             ");
-            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -114,7 +114,7 @@ AS
 GO
 ");
 
-            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
@@ -123,7 +123,7 @@ GO
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.DeleteById.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
 
-            var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
+            var primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME).COLUMN_NAME;
             StringBuilder text = new StringBuilder($@"
 {alterOrCreate} PROCEDURE {procedureName}
     @Id INT
@@ -134,13 +134,13 @@ AS
 GO
             ");
 
-            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
         private string CreateProcedureInsertFile(TableSchema tableSchema,List<string> currentProcedures )
         {
-            var primaryKey = SqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
+            var primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.Insert.ToString()}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
             StringBuilder columns = new StringBuilder();
@@ -169,7 +169,7 @@ GO
                 }
             }
             var filteredColumns = tableSchema.Columns.Where(c => c.COLUMN_NAME != primaryKey.COLUMN_NAME).ToList();
-            string parameters = SqlService.GetColumnParameterSP(filteredColumns);
+            string parameters = _sqlService.GetColumnParameterSP(filteredColumns);
             StringBuilder text = new StringBuilder($@"
 {alterOrCreate} PROCEDURE {procedureName}
     @{primaryKey.COLUMN_NAME} {primaryKey.DATA_TYPE} = NULL,
@@ -185,17 +185,17 @@ AS
 GO
             ");
 
-            fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", text.ToString());
 
             return text.ToString();
         }
         public void CreateEnumProceduresFile()
         {
-            var tables = SqlService.GetAllTableSchema();
+            var tables = _sqlService.GetAllTableSchema();
             foreach(var table  in tables)
             {
                 var tableName = table.TABLE_NAME;
-                var procedures = SqlService.GetStoredProceduresByTable(tableName);
+                var procedures = _sqlService.GetStoredProceduresByTable(tableName);
 
                
                     StringBuilder text = new StringBuilder();
@@ -216,10 +216,60 @@ namespace Project.{FolderNames.ProcedureEnums}
                     text.AppendLine($@"
     }}
 }}");
-                    fileService.Create(FolderNames.ProcedureEnums.ToString(), $"{tableName}Procedures.cs", text.ToString());
+                    _fileService.Create(FolderNames.ProcedureEnums.ToString(), $"{tableName}Procedures.cs", text.ToString());
             }
         }
 
+        public string CreateProcedureInsertManyFile(TableSchema tableSchema, List<string> currentProcedures)
+        {
+            string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.InsertMany}";
+            string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
+            Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
+            string[] tableColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).Select(c=> $"\t\t{c.COLUMN_NAME}").ToArray();
+            string[] tvpColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).Select(c => $"\t\ttvp.{c.COLUMN_NAME}").ToArray();
+
+            string content = $@"
+{alterOrCreate} PROCEDURE {procedureName}
+    @TVP {tvpName} READONLY
+AS
+   INSERT INTO {tableSchema.TABLE_NAME}(
+{string.Join($",\n", tableColumns)}
+        )
+   OUTPUT INSERTED.*
+   SELECT 
+{string.Join($",\n", tvpColumns)}
+    FROM @TVP AS tvp
+GO
+";
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
+            return content;
+        }
+
+        public string CreateProcedureUpdateManyFile(TableSchema tableSchema, List<string> currentProcedures)
+        {
+            string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.UpdateMany}";
+            string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
+            Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
+            string[] setQueries = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).Select(c => $"\t\ttbl.{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}").ToArray();
+
+            string content = $@"
+{alterOrCreate} PROCEDURE {procedureName}
+    @TVP {tvpName} READONLY
+AS
+   UPDATE tbl
+   SET
+{string.Join($",\n", setQueries)}
+    FROM {tableSchema.TABLE_NAME} AS tbl
+    JOIN @TVP AS tvp ON tvp.{primaryKey.COLUMN_NAME} = tbl.{primaryKey.COLUMN_NAME}
+    
+    SELECT * FROM @TVP 
+GO
+";
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
+            return content;
+        }
 
         private string AlterOrCreate(List<string> currentProcedures, string procedureName)
         {

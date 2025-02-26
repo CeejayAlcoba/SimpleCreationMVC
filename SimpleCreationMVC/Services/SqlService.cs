@@ -80,6 +80,7 @@ namespace SimpleCreation.Services
             }
             return columnParameter.ToString();
         }
+
         public Column GetTablePrimaryKey(string tableName)
         {
             string query = $@"SELECT DISTINCT CCU.COLUMN_NAME, C.DATA_TYPE, C.IS_NULLABLE FROM
@@ -93,6 +94,18 @@ namespace SimpleCreation.Services
                                AND TC.CONSTRAINT_TYPE='PRIMARY KEY'";
 
             return connection.QueryFirstOrDefault<Column>(query)?? new Column();
+        }
+
+        public List<Column> GetTableColumns(string tableName, bool includePrimaryKey = true)
+        {
+            Column primaryKey = GetTablePrimaryKey(tableName);
+            string query = $@"SELECT *
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = N'{tableName}'";
+
+            IEnumerable<Column> columns = connection.Query<Column>(query) ?? new List<Column>();
+
+            return columns.Where(c => c.COLUMN_NAME != primaryKey.COLUMN_NAME || includePrimaryKey).ToList();
         }
 
     }

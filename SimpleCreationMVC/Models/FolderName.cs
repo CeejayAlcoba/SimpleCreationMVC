@@ -3,6 +3,7 @@
     public enum FolderNames
     {
         Models,
+        TableValuedParameters,
         ProcedureQueries,
         ProcedureEnums,
         Repositories,

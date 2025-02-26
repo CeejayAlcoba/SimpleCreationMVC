@@ -7,5 +7,7 @@
         DeleteById,
         GetAll,
         GetById,
+        InsertMany,
+        UpdateMany
     }
 }
