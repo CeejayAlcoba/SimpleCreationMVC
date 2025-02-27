@@ -6,7 +6,7 @@ namespace SimpleCreationMVC.Services
     public class UtilityService
     {
         public FileService _fileService = new FileService();
-        public void CreateAutoMapperConfigFile()
+        public void CreateAutoMapperUtilityFile()
         {
             var text = $@"
 using AutoMapper;
@@ -16,7 +16,7 @@ using System.Linq;
 
 namespace Project.{FolderNames.Utilities}
 {{
-    public class AutoMapperConfig
+    public class AutoMapperUtility
     {{
         public TDestination Map<TDestination>(object source)
         {{
@@ -50,7 +50,52 @@ namespace Project.{FolderNames.Utilities}
     }}
 }}
 ";
-            _fileService.Create(FolderNames.Utilities.ToString(), "AutoMapperConfig.cs", text);
+            _fileService.Create(FolderNames.Utilities.ToString(), "AutoMapperUtility.cs", text);
+        }
+
+        public void CreateDataTableUtilityFile()
+        {
+            var text = $@"
+using System.Data;
+using System.Reflection;
+
+namespace Project.{FolderNames.Utilities}
+{{
+    public class DataTableUtility
+    {{
+        public DataTable Convert<T>(IEnumerable<T> lists) where T : class
+        {{
+            if (lists == null || !lists.Any())
+                throw new ArgumentException(""The list cannot be null or empty."");
+
+            DataTable dt = new DataTable(typeof(T).Name);
+            PropertyInfo[] properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            // Add columns to DataTable
+            foreach (PropertyInfo property in properties)
+            {{
+                Type columnType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                dt.Columns.Add(property.Name, columnType);
+            }}
+
+            // Add rows to DataTable
+            foreach (T item in lists)
+            {{
+                DataRow row = dt.NewRow();
+                foreach (PropertyInfo property in properties)
+                {{
+                    row[property.Name] = property.GetValue(item) ?? DBNull.Value;
+                }}
+                dt.Rows.Add(row);
+            }}
+
+            return dt;
+        }}
+    }}
+}}
+
+";
+            _fileService.Create(FolderNames.Utilities.ToString(), "DataTableUtility.cs", text);
         }
     }
 }

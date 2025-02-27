@@ -25,98 +25,124 @@ namespace SimpleCreation.Services
             string variableTableName = textService.ToCamelCase(table);
             string service = $"{tableName}Service";
             string serviceName = $"_{textService.ToCamelCase(service)}";
-            string text = @"
+            string text = $@"
 using Microsoft.AspNetCore.Mvc;
-using Project."+FolderNames.Models.ToString()+ @";
-using Project."+FolderNames.Services.ToString()+@";
+using Project.{FolderNames.Models.ToString()};
+using Project.{FolderNames.Services.ToString()};
 
 namespace Project.ApiControllers
-{
-    [Route(""api/" + textService.ToKebabCase(table) + @""")]
+{{
+    [Route(""api/{textService.ToKebabCase(table)}"")]
     [ApiController]
-    public class " + table + @"Controller : ControllerBase
-    {
-        private readonly " + service + " " + serviceName + " = new " + service + @"();
+    public class {table}Controller : ControllerBase
+    {{
+        private readonly {service} {serviceName} = new {service}();
 
         [HttpGet(""list"")]
-        public async Task<IActionResult> GetAll" + table + @"()
-        {
+        public async Task<IActionResult> GetAll()
+        {{
             try
-            {
-                var data = await " + serviceName + @".GetAll();
+            {{
+                var data = await {serviceName}.GetAll();
                 return Ok(data);
-            }
+            }}
             catch (Exception ex)
-            {
+            {{
                 return BadRequest(ex.Message);
-            }
+            }}
            
-        }
-        [HttpGet(""{id}"")]
-        public async Task<IActionResult> GetById" + table + @"(int id)
-        {
+        }}
+        [HttpGet(""{{id}}"")]
+        public async Task<IActionResult> GetById(int id)
+        {{
             try
-            {
-                var data = await  " + serviceName + @".GetById(id);
+            {{
+                var data = await {serviceName}.GetById(id);
                 if (data == null) return NoContent();
 
                 return Ok(data);
-            }
+            }}
             catch (Exception ex)
-            {
+            {{
                 return BadRequest(ex.Message);
-            }
-        }
+            }}
+        }}
         [HttpPost]
-        public async Task<IActionResult> Insert" + table + @"([FromBody]"+table+" "+variableTableName+@")
-        {
+        public async Task<IActionResult> Insert([FromBody]{table} {variableTableName})
+        {{
             try
-            {
-                var data = await " + serviceName + @".Insert("+ variableTableName + @");
+            {{
+                var data = await {serviceName}.Insert({variableTableName});
                 return Ok(data);
-            }
+            }}
             catch (Exception ex)
-            {
+            {{
                 return BadRequest(ex.Message);
-            }
-        }
+            }}
+        }}
 
-        [HttpPut(""{id}"")]
-        public async Task<IActionResult> Update" + table + @"(int id,[FromBody]"+table+" "+variableTableName+ @")
-        {
+        [HttpPut(""{{id}}"")]
+        public async Task<IActionResult> Update(int id,[FromBody]{table} {variableTableName})
+        {{
             try
-            {
-                if(id != "+ $"{variableTableName}.{primaryKey}" + @") return BadRequest(""Id mismatched."");
+            {{
+                if(id != {variableTableName}.{primaryKey}) return BadRequest(""Id mismatched."");
 
-                var data = await " + serviceName + @".GetById(id);
+                var data = await {serviceName}.GetById(id);
                 if (data == null) return NotFound();
 
-                var updatedData = await " + serviceName + @".Update("+ variableTableName + @"); 
+                var updatedData = await {serviceName}.Update({variableTableName}); 
                 return Ok(updatedData);
-            }
+            }}
             catch (Exception ex)
-            {
+            {{
                 return BadRequest(ex.Message);
-            }
-        }
-        [HttpDelete(""{id}"")]
-        public async Task<IActionResult> DeleteById" + table + @"(int id)
-        {
+            }}
+        }}
+        [HttpDelete(""{{id}}"")]
+        public async Task<IActionResult> DeleteById(int id)
+        {{
             try
-            {
-                var data = await " + serviceName + @".GetById(id);
+            {{
+                var data = await {serviceName}.GetById(id);
                 if (data == null) return NotFound();
 
-                var deletedData = await " + serviceName + @".DeleteById(id);
+                var deletedData = await {serviceName}.DeleteById(id);
                 return Ok(deletedData);
-            }
+            }}
             catch (Exception ex)
-            {
+            {{
                 return BadRequest(ex.Message);
-            }
-        }
-    }
-}
+            }}
+        }}
+        [HttpPost(""many"")]
+        public async Task<IActionResult> InsertMany([FromBody]List<{table}> listData)
+        {{
+            try
+            {{
+                var data = await {serviceName}.InsertMany(listData);
+                return Ok(data);
+            }}
+            catch (Exception ex)
+            {{
+                return BadRequest(ex.Message);
+            }}
+        }}
+        [HttpPut(""many"")]
+        public async Task<IActionResult> UpdateMany([FromBody] List<{table}> listData)
+        {{
+            try
+            {{
+                var data = await {serviceName}.UpdateMany(listData);
+                return Ok(data);
+            }}
+            catch (Exception ex)
+            {{
+                return BadRequest(ex.Message);
+            }}
+        }}
+    }}
+}}
 ";
             fileService.Create(FolderNames.Controllers.ToString(), $"{table}Controller.cs", text);
         }

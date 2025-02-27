@@ -34,7 +34,8 @@ namespace SimpleCreation.ApiControllers
                 _storedProcedureService.CreateEnumProceduresFile();
                 _serviceService.CreateServicesFiles(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
-                _utilityService.CreateAutoMapperConfigFile();
+                _utilityService.CreateAutoMapperUtilityFile();
+                _utilityService.CreateDataTableUtilityFile();
                 _readMeService.CreateDapperNote();
 
                 return Ok();

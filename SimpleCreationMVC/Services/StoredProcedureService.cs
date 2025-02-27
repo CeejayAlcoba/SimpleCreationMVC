@@ -130,6 +130,7 @@ GO
 AS
     
     DELETE FROM {tableSchema.TABLE_NAME}
+    OUTPUT deleted.*
     WHERE {primaryKey} =  @Id
 GO
             ");

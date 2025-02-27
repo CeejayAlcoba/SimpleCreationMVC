@@ -40,48 +40,24 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             {
                 var tableName = table.TABLE_NAME;
                 string text = $@"
-using Dapper;
-using Microsoft.Data.SqlClient;
 using Project.{FolderNames.Models};
 using Project.{FolderNames.ProcedureEnums};
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Data;
 
 namespace Project.{FolderNames.Repositories}
 {{
     public class {tableName}Repository : GenericRepository<{tableName}, {tableName}Procedures>
     {{
-        // New Get All
-        public async Task<IEnumerable<{tableName}>> GetAll()
+        private static GenericProcedure<{tableName}Procedures> procedures = new GenericProcedure<{tableName}Procedures>
         {{
-            return await GetAll({tableName}Procedures.{tableName}_GetAll);
-        }}
-
-        // New Get By ID
-        public async Task<{tableName}?> GetById(int id)
+            GetAll = {tableName}Procedures.{tableName}_GetAll,
+            GetById = {tableName}Procedures.{tableName}_GetById,
+            Insert = {tableName}Procedures.{tableName}_Insert,
+            Update = {tableName}Procedures.{tableName}_Update,
+            InsertMany = {tableName}Procedures.{tableName}_InsertMany,
+            UpdateMany = {tableName}Procedures.{tableName}_UpdateMany,
+        }};
+        public {tableName}Repository() : base(procedures)
         {{
-            return await GetById({tableName}Procedures.{tableName}_GetById, id);
-        }}
-
-        // New Insert
-        public async Task<{tableName}?> Insert({tableName} entity)
-        {{
-            return await Insert({tableName}Procedures.{tableName}_Insert, entity);
-        }}
-
-        // New Update
-        public async Task<{tableName}?> Update({tableName} entity)
-        {{
-            return await Update({tableName}Procedures.{tableName}_Update, entity);
-        }}
-
-        // New Delete By ID
-        public async Task<{tableName}?> DeleteById(int id)
-        {{
-             var data = await GetById(id);
-             await DeleteById({tableName}Procedures.{tableName}_DeleteById, id);
-             return data;
         }}
     }}
 }}";

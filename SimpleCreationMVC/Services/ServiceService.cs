@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
-using SimpleCreation.Models;
+﻿using SimpleCreation.Models;
 
 namespace SimpleCreation.Services
 {
@@ -59,6 +56,14 @@ namespace Project.{FolderNames.Services}
         public async Task<{tableName}?> DeleteById(int id)
         {{
             return await {repositoryName}.DeleteById(id);
+        }}
+        public async Task<IEnumerable<{tableName}>> InsertMany(List<{tableName}> data)
+        {{
+            return await {repositoryName}.InsertMany(data);
+        }}
+        public async Task<IEnumerable<{tableName}>> UpdateMany(List<{tableName}> data)
+        {{
+            return await {repositoryName}.UpdateMany(data);
         }}
     }}
 }}";

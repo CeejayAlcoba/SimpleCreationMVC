@@ -27,54 +27,81 @@ namespace SimpleCreation.Services
             string text = $@"
 using Dapper;
 using Microsoft.Data.SqlClient;
-using Project.{FolderNames.Models};
-using Project.{FolderNames.ProcedureEnums};
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Data;
+using Project.{FolderNames.Utilities};
 
 namespace Project.{FolderNames.Repositories}
 {{
-    public class GenericRepository<T,TProcedures>
+    public class GenericProcedure<TProcedures>
+    {{
+        public TProcedures? GetAll {{ get; set; }} 
+        public TProcedures? GetById {{ get; set; }}
+        public TProcedures? Insert {{ get; set; }}
+        public TProcedures? Update {{ get; set; }}
+        public TProcedures? DeleteById {{ get; set; }}
+        public TProcedures? InsertMany {{ get; set; }}
+        public TProcedures? UpdateMany {{ get; set; }}
+    }}
+
+     public class GenericRepository<T, TProcedures>
         where T : class
         where TProcedures : struct, Enum
     {{
         public readonly IDbConnection _connection;
+        private readonly GenericProcedure<TProcedures> _procedures;
         public readonly int _commandTimeout = 120;
+        public readonly DataTableUtility _dataTableUtility = new DataTableUtility();
 
-        public GenericRepository()
+        public GenericRepository(GenericProcedure<TProcedures> procedures)
         {{
+            _procedures = procedures;
             _connection = new SqlConnection(""{modifiedConnectionString}"");
         }}
 
         // Get All
-        public async Task<IEnumerable<T>> GetAll(TProcedures procedureName)
+        public async Task<IEnumerable<T>> GetAll()
         {{
-            return await _connection.QueryAsync<T>(procedureName.ToString(), commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryAsync<T>(_procedures.GetAll.ToString(), commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         // Get By ID
-        public async Task<T?> GetById(TProcedures procedureName,int id)
+        public async Task<T?> GetById(int id)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(procedureName.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.GetById.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         // Insert
-        public async Task<T?> Insert(TProcedures procedureName,T entity)
+        public async Task<T?> Insert(T entity)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(procedureName.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.Insert.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         // Update
-        public async Task<T?> Update(TProcedures procedureName,T entity)
+        public async Task<T?> Update(T entity)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(procedureName.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.Update.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         // Delete By ID
-        public async Task DeleteById(TProcedures procedureName,int id)
+        public async Task<T?> DeleteById(int id)
         {{
-            await _connection.ExecuteAsync(procedureName.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.DeleteById.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        // Insert Many
+        public async Task<IEnumerable<T>> InsertMany( List<T> data)
+        {{
+            var dt = _dataTableUtility.Convert<T>(data);
+            var tableName = typeof(T).Name;
+            return await _connection.QueryAsync<T>(_procedures.InsertMany.ToString(), new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        // Update Many
+        public async Task<IEnumerable<T>> UpdateMany( List<T> data)
+        {{
+            var dt = _dataTableUtility.Convert<T>(data);
+            var tableName = typeof(T).Name;
+            return await _connection.QueryAsync<T>(_procedures.UpdateMany.ToString(), new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
     }}
 }}";
