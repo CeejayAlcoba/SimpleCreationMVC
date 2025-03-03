@@ -322,12 +322,13 @@ namespace Project." + FolderNames.ApplicationContexts.ToString() + @"
             string text = @"
 using Microsoft.EntityFrameworkCore;
 using Project." + FolderNames.ApplicationContexts.ToString() + @";
+using System.ComponentModel.DataAnnotations;
 
 namespace Project." + FolderNames.Repositories.ToString() + @"
 {
     public class GenericRepository<T> where T : class
     {
-  private readonly ApplicationContext _context = new ApplicationContext();
+        private readonly ApplicationContext _context = new ApplicationContext();
 
         public virtual async Task<T> Insert(T entity)
         {
