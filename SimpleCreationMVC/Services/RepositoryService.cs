@@ -51,6 +51,7 @@ namespace Project.{FolderNames.Repositories}
         {{
             GetAll = {tableName}Procedures.{tableName}_GetAll,
             GetById = {tableName}Procedures.{tableName}_GetById,
+            DeleteById = {tableName}Procedures.{tableName}_DeleteById,
             Insert = {tableName}Procedures.{tableName}_Insert,
             Update = {tableName}Procedures.{tableName}_Update,
             InsertMany = {tableName}Procedures.{tableName}_InsertMany,
