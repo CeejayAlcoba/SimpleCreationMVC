@@ -47,7 +47,7 @@ namespace Project.{FolderNames.Repositories}
 {{
     public class {tableName}Repository : GenericRepository<{tableName}, {tableName}Procedures>
     {{
-        private static GenericProcedure<{tableName}Procedures> procedures = new GenericProcedure<{tableName}Procedures>
+        private static GenericProcedure<{tableName}Procedures> _procedures = new GenericProcedure<{tableName}Procedures>
         {{
             GetAll = {tableName}Procedures.{tableName}_GetAll,
             GetById = {tableName}Procedures.{tableName}_GetById,
@@ -57,7 +57,7 @@ namespace Project.{FolderNames.Repositories}
             InsertMany = {tableName}Procedures.{tableName}_InsertMany,
             UpdateMany = {tableName}Procedures.{tableName}_UpdateMany,
         }};
-        public {tableName}Repository() : base(procedures)
+        public {tableName}Repository() : base(_procedures)
         {{
         }}
     }}
