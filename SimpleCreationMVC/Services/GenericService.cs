@@ -188,11 +188,31 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             }
             query.Remove(query.Length - 1, 1);
 
-            query.AppendLine(""WHERE {keyColumn} = @{keyProperty} SELECT * FROM {tableName} WHERE {keyColumn} = @{keyProperty}"");
+            query.AppendLine($""WHERE {keyColumn} = @{keyProperty} SELECT * FROM {tableName} WHERE {keyColumn} = @{keyProperty}"");
 
             return await _connection.QueryFirstOrDefaultAsync<T>(query.ToString(), entity);
         }
 
+        public virtual async Task<IEnumerable<T>> InsertMany(List<T> list)
+        {
+            List<T> result = new List<T>();
+            foreach (T item in list)
+            {
+               T addedItem =  await Insert(item);
+               result.Add(addedItem);
+            }
+            return result;
+        }
+        public virtual async Task<IEnumerable<T>> UpdateMany(List<T> list)
+        {
+            List<T> result = new List<T>();
+            foreach (T item in list)
+            {
+                T updatedItem = await Update(item);
+                result.Add(updatedItem);
+            }
+            return result;
+        }
         private string GetTableName()
         {
             string tableName = """";
