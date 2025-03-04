@@ -362,6 +362,21 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             await _context.SaveChangesAsync();
             return deletedData;
         }
+        public virtual async Task<IEnumerable<T>> UpdateMany(List<T> list)
+        {
+            foreach (var item in list)
+            {
+                await Update(item);
+            }
+            await _context.SaveChangesAsync();
+            return list;
+        }
+        public virtual async Task<IEnumerable<T>> InsertMany(List<T> list)
+        {
+            await _context.AddRangeAsync(list);
+            await _context.SaveChangesAsync();
+            return list;
+        }
         private int? GetKeyValueAsInt(T entity)
         {
             var entityType = typeof(T);
