@@ -10,12 +10,12 @@ namespace SimpleCreationMVC.ApiControllers
     public class RepositoryController : ControllerBase
     {
         [HttpPost("create")]
-        public IActionResult CreateRepository([FromBody] List<TableSchema> tableSchemas)
+        public IActionResult CreateRepository([FromQuery] string connectionString, [FromBody] List<TableSchema> tableSchemas)
         {
             try
             {
                 FileService _fileService = new FileService();
-                RepositoryService _repositoryService = new RepositoryService();
+                RepositoryService _repositoryService = new RepositoryService(connectionString);
 
                 _fileService.Delete();
                 _repositoryService.CreateRepositoriesFiles(tableSchemas);

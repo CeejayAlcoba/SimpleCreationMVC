@@ -42,11 +42,14 @@ namespace SimpleCreation.Services
                 string strTVP = _tableValuedParameterService.CreateTVPFile(tableSchema);
                 queries.AppendLine(strTVP);
 
-                string strInsertMany = CreateProcedureInsertManyFile(tableSchema, currentProcedures);
-                queries.AppendLine(strInsertMany);
+                string strBulkInsert = CreateProcedureBulkInsertFile(tableSchema, currentProcedures);
+                queries.AppendLine(strBulkInsert);
 
-                string strUpdateMany = CreateProcedureUpdateManyFile(tableSchema, currentProcedures);
-                queries.AppendLine(strUpdateMany);
+                string strBulkUpdate = CreateProcedureBulkUpdateFile(tableSchema, currentProcedures);
+                queries.AppendLine(strBulkUpdate);
+
+                string strBulkMerge = CreateProcedureBulkUpsertFile(tableSchema, currentProcedures);
+                queries.AppendLine(strBulkMerge);
 
             }
             _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"All.sql", queries.ToString());
@@ -221,10 +224,10 @@ namespace Project.{FolderNames.ProcedureEnums}
             }
         }
 
-        public string CreateProcedureInsertManyFile(TableSchema tableSchema, List<string> currentProcedures)
+        public string CreateProcedureBulkInsertFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.InsertMany}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkInsert}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
             Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
             string[] tableColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).Select(c=> $"\t\t{c.COLUMN_NAME}").ToArray();
@@ -247,10 +250,10 @@ GO
             return content;
         }
 
-        public string CreateProcedureUpdateManyFile(TableSchema tableSchema, List<string> currentProcedures)
+        public string CreateProcedureBulkUpdateFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.UpdateMany}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkUpdate}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
             Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
             string[] setQueries = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).Select(c => $"\t\ttbl.{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}").ToArray();
@@ -266,6 +269,51 @@ AS
     JOIN @TVP AS tvp ON tvp.{primaryKey.COLUMN_NAME} = tbl.{primaryKey.COLUMN_NAME}
     
     SELECT * FROM @TVP 
+GO
+";
+            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
+            return content;
+        }
+        public string CreateProcedureBulkUpsertFile(TableSchema tableSchema, List<string> currentProcedures)
+        {
+            string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkUpsert}";
+            string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
+            Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
+
+            var nonPrimaryKeyColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).ToList();
+
+            string insertColumns = string.Join(",\n\t\t", nonPrimaryKeyColumns.Select(c => c.COLUMN_NAME));
+
+            string insertValues = string.Join(",\n\t\t", nonPrimaryKeyColumns.Select(c => $"source.{c.COLUMN_NAME}"));
+
+            string updateSetStatements = string.Join(",\n\t\t\t", nonPrimaryKeyColumns.Select(c => $"{c.COLUMN_NAME} = source.{c.COLUMN_NAME}"));
+
+            string content = $@"
+{alterOrCreate} PROCEDURE {procedureName}
+    @TVP {tvpName} READONLY
+AS
+    MERGE {tableSchema.TABLE_NAME} as target
+        USING (
+            SELECT
+                *
+            FROM @TVP
+        ) AS source
+        ON target.{primaryKey.COLUMN_NAME} = source.{primaryKey.COLUMN_NAME}
+    WHEN NOT MATCHED THEN
+    INSERT (
+        {insertColumns}
+    ) 
+    VALUES
+    (
+        {insertValues}
+    )
+    
+    WHEN MATCHED THEN  
+        UPDATE SET  
+            {updateSetStatements}
+    OUTPUT 
+        INSERTED.*;
 GO
 ";
             _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);

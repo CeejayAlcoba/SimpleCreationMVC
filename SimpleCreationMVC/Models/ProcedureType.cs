@@ -7,7 +7,8 @@
         DeleteById,
         GetAll,
         GetById,
-        InsertMany,
-        UpdateMany
+        BulkInsert,
+        BulkUpdate,
+        BulkUpsert
     }
 }

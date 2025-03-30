@@ -19,7 +19,7 @@ namespace SimpleCreation.ApiControllers
                 FileService _fileService = new FileService();
                 GenericService _genericService = new GenericService(connectionString);
                 ModelService _modelService = new ModelService(connectionString);
-                RepositoryService _repositoryService = new RepositoryService();
+                RepositoryService _repositoryService = new RepositoryService(connectionString);
                 ServiceService _serviceService = new ServiceService();
                 ControllerService _controllerService = new ControllerService(connectionString);
                 ReadMeService _readMeService = new ReadMeService();

@@ -1,4 +1,5 @@
 ﻿
+using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
@@ -8,6 +9,14 @@ namespace SimpleCreation.Services
     public class RepositoryService
     {
         private readonly FileService fileService = new FileService();
+        private readonly StoredProcedureService _storedProcedureService;
+        private readonly SqlService _sqlService;
+        public RepositoryService(string connectionString)
+        {
+            _storedProcedureService = new StoredProcedureService(connectionString);
+            _sqlService = new SqlService(connectionString);
+         
+        }
         public void CreateRepositoriesFiles(List<TableSchema> tableSchemas)
         {
 
@@ -39,6 +48,38 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             foreach (var table in tableSchemas)
             {
                 var tableName = table.TABLE_NAME;
+                var storedProcedures = _sqlService.GetStoredProceduresByTable(tableName);
+                var keyValueList = new List<string>();
+
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.GetAll}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.GetAll} = {tableName}Procedures.{tableName}_{ProcedureTypes.GetAll}");
+                }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.GetById}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.GetById} = {tableName}Procedures.{tableName}_{ProcedureTypes.GetById}");
+                }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.Insert}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.Insert} = {tableName}Procedures.{tableName}_{ProcedureTypes.Insert}");
+                }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.Update}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.Update} = {tableName}Procedures.{tableName}_{ProcedureTypes.Update}");
+                }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.BulkInsert}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.BulkInsert} = {tableName}Procedures.{tableName}_{ProcedureTypes.BulkInsert}");
+                }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.BulkUpdate}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.BulkUpdate} = {tableName}Procedures.{tableName}_{ProcedureTypes.BulkUpdate}");
+                }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.BulkUpsert}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.BulkUpsert} = {tableName}Procedures.{tableName}_{ProcedureTypes.BulkUpsert}");
+                }
+
                 string text = $@"
 using Project.{FolderNames.Models};
 using Project.{FolderNames.ProcedureEnums};
@@ -49,13 +90,7 @@ namespace Project.{FolderNames.Repositories}
     {{
         private static GenericProcedure<{tableName}Procedures> _procedures = new GenericProcedure<{tableName}Procedures>
         {{
-            GetAll = {tableName}Procedures.{tableName}_GetAll,
-            GetById = {tableName}Procedures.{tableName}_GetById,
-            DeleteById = {tableName}Procedures.{tableName}_DeleteById,
-            Insert = {tableName}Procedures.{tableName}_Insert,
-            Update = {tableName}Procedures.{tableName}_Update,
-            InsertMany = {tableName}Procedures.{tableName}_InsertMany,
-            UpdateMany = {tableName}Procedures.{tableName}_UpdateMany,
+            {string.Join(",\n",keyValueList)}
         }};
         public {tableName}Repository() : base(_procedures)
         {{
@@ -70,3 +105,4 @@ namespace Project.{FolderNames.Repositories}
 
     }
 }
+

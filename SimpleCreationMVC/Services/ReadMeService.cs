@@ -29,7 +29,7 @@ The project should download the following NuGet packages:
 PM> Install-Package Microsoft.EntityFrameworkCore
 PM> Install-Package Microsoft.EntityFrameworkCore.Tools
 PM> Install-Package Microsoft.EntityFrameworkCore.SqlServer
-
+PM> Install-Package EFCore.BulkExtensions
 PM> Install-Package AutoMapper
 "
             ;

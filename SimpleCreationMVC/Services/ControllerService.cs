@@ -39,11 +39,11 @@ namespace Project.ApiControllers
         private readonly {service} {serviceName} = new {service}();
 
         [HttpGet(""list"")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAllAsync()
         {{
             try
             {{
-                var data = await {serviceName}.GetAll();
+                IEnumerable<{table}> data = await {serviceName}.GetAllAsync();
                 return Ok(data);
             }}
             catch (Exception ex)
@@ -53,11 +53,11 @@ namespace Project.ApiControllers
            
         }}
         [HttpGet(""{{id}}"")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetByIdAsync(int id)
         {{
             try
             {{
-                var data = await {serviceName}.GetById(id);
+                {table}? data = await {serviceName}.GetByIdAsync(id);
                 if (data == null) return NoContent();
 
                 return Ok(data);
@@ -68,11 +68,11 @@ namespace Project.ApiControllers
             }}
         }}
         [HttpPost]
-        public async Task<IActionResult> Insert([FromBody]{table} {variableTableName})
+        public async Task<IActionResult> InsertAsync([FromBody]{table} {variableTableName})
         {{
             try
             {{
-                var data = await {serviceName}.Insert({variableTableName});
+                {table}? data = await {serviceName}.InsertAsync({variableTableName});
                 return Ok(data);
             }}
             catch (Exception ex)
@@ -82,16 +82,16 @@ namespace Project.ApiControllers
         }}
 
         [HttpPut(""{{id}}"")]
-        public async Task<IActionResult> Update(int id,[FromBody]{table} {variableTableName})
+        public async Task<IActionResult> UpdateAsync(int id,[FromBody]{table} {variableTableName})
         {{
             try
             {{
                 if(id != {variableTableName}.{primaryKey}) return BadRequest(""Id mismatched."");
 
-                var data = await {serviceName}.GetById(id);
+                {table}? data = await {serviceName}.GetByIdAsync(id);
                 if (data == null) return NotFound();
 
-                var updatedData = await {serviceName}.Update({variableTableName}); 
+                {table}? updatedData = await {serviceName}.UpdateAsync({variableTableName}); 
                 return Ok(updatedData);
             }}
             catch (Exception ex)
@@ -100,14 +100,14 @@ namespace Project.ApiControllers
             }}
         }}
         [HttpDelete(""{{id}}"")]
-        public async Task<IActionResult> DeleteById(int id)
+        public async Task<IActionResult> DeleteByIdAsync(int id)
         {{
             try
             {{
-                var data = await {serviceName}.GetById(id);
+                {table}? data = await {serviceName}.GetByIdAsync(id);
                 if (data == null) return NotFound();
 
-                var deletedData = await {serviceName}.DeleteById(id);
+                var deletedData = await {serviceName}.DeleteByIdAsync(id);
                 return Ok(deletedData);
             }}
             catch (Exception ex)
@@ -115,12 +115,12 @@ namespace Project.ApiControllers
                 return BadRequest(ex.Message);
             }}
         }}
-        [HttpPost(""many"")]
-        public async Task<IActionResult> InsertMany([FromBody]List<{table}> listData)
+        [HttpPost(""bulk"")]
+        public async Task<IActionResult> BulkInsertAsync([FromBody]List<{table}> listData)
         {{
             try
             {{
-                var data = await {serviceName}.InsertMany(listData);
+                IEnumerable<{table}> data = await {serviceName}.BulkInsertAsync(listData);
                 return Ok(data);
             }}
             catch (Exception ex)
@@ -128,12 +128,25 @@ namespace Project.ApiControllers
                 return BadRequest(ex.Message);
             }}
         }}
-        [HttpPut(""many"")]
-        public async Task<IActionResult> UpdateMany([FromBody] List<{table}> listData)
+        [HttpPut(""bulk"")]
+        public async Task<IActionResult> BulkUpdateAsync([FromBody] List<{table}> listData)
         {{
             try
             {{
-                var data = await {serviceName}.UpdateMany(listData);
+                IEnumerable<{table}> data = await {serviceName}.BulkUpdateAsync(listData);
+                return Ok(data);
+            }}
+            catch (Exception ex)
+            {{
+                return BadRequest(ex.Message);
+            }}
+        }}
+        [HttpPut(""bulk-upsert"")]
+        public async Task<IActionResult> BulkUpsertAsync([FromBody] List<{table}> listData)
+        {{
+            try
+            {{
+                IEnumerable<{table}> data = await {serviceName}.BulkUpsertAsync(listData);
                 return Ok(data);
             }}
             catch (Exception ex)

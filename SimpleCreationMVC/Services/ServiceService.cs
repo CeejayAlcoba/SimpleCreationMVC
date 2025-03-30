@@ -33,37 +33,41 @@ namespace Project.{FolderNames.Services}
     {{
         private readonly {repository} {repositoryName} = new {repository}();
 
-        public async Task<{tableName}?> Insert({tableName} data)
+        public async Task<{tableName}?> InsertAsync({tableName} data)
         {{
-            return await {repositoryName}.Insert(data);
+            return await {repositoryName}.InsertAsync(data);
         }}
 
-        public async Task<{tableName}?> Update({tableName} data)
+        public async Task<{tableName}?> UpdateAsync({tableName} data)
         {{
-            return await {repositoryName}.Update(data);
+            return await {repositoryName}.UpdateAsync(data);
         }}
 
-        public async Task<IEnumerable<{tableName}>> GetAll()
+        public async Task<IEnumerable<{tableName}>> GetAllAsync()
         {{
-            return await {repositoryName}.GetAll();
+            return await {repositoryName}.GetAllAsync();
         }}
 
-        public async Task<{tableName}?> GetById(int id)
+        public async Task<{tableName}?> GetByIdAsync(int id)
         {{
-            return await {repositoryName}.GetById(id);
+            return await {repositoryName}.GetByIdAsync(id);
         }}
 
-        public async Task<{tableName}?> DeleteById(int id)
+        public async Task<{tableName}?> DeleteByIdAsync(int id)
         {{
-            return await {repositoryName}.DeleteById(id);
+            return await {repositoryName}.DeleteByIdAsync(id);
         }}
-        public async Task<IEnumerable<{tableName}>> InsertMany(List<{tableName}> data)
+        public async Task<IEnumerable<{tableName}>> BulkInsertAsync(List<{tableName}> data)
         {{
-            return await {repositoryName}.InsertMany(data);
+            return await {repositoryName}.BulkInsertAsync(data);
         }}
-        public async Task<IEnumerable<{tableName}>> UpdateMany(List<{tableName}> data)
+        public async Task<IEnumerable<{tableName}>> BulkUpdateAsync(List<{tableName}> data)
         {{
-            return await {repositoryName}.UpdateMany(data);
+            return await {repositoryName}.BulkUpdateAsync(data);
+        }}
+        public async Task<IEnumerable<{tableName}>> BulkUpsertAsync(List<{tableName}> data)
+        {{
+            return await {repositoryName}.BulkUpsertAsync(data);
         }}
     }}
 }}";
