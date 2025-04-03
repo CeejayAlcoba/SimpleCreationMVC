@@ -31,6 +31,7 @@ namespace SimpleCreation.ApiControllers
                 _serviceService.CreateServicesFiles(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
                 _utilityService.CreateAutoMapperUtilityFile();
+                _utilityService.CreateAppUtilityFile();
                 _readMeService.CreateEFCoreNote();
 
                 return Ok();

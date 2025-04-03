@@ -33,6 +33,7 @@ namespace SimpleCreation.ApiControllers
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
                 _utilityService.CreateAutoMapperUtilityFile();
                 _utilityService.CreateDataTableUtilityFile();
+                _utilityService.CreateAppUtilityFile();
                 _readMeService.CreateDapperNote();
 
                 return Ok();

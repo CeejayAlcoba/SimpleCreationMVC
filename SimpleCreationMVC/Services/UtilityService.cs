@@ -97,5 +97,23 @@ namespace Project.{FolderNames.Utilities}
 ";
             _fileService.Create(FolderNames.Utilities.ToString(), "DataTableUtility.cs", text);
         }
+
+        public void CreateAppUtilityFile()
+        {
+            var text = $@"
+using Microsoft.Extensions.Configuration;
+namespace Repositories.Utilities
+{{
+    public class AppUtility
+    {{ 
+           public IConfigurationRoot configuration = new ConfigurationBuilder()
+           .SetBasePath(Directory.GetCurrentDirectory())
+           .AddJsonFile(""appsettings.json"", optional: false, reloadOnChange: true)
+           .Build();
+    }}
+}}
+";
+            _fileService.Create(FolderNames.Utilities.ToString(), "AppUtility.cs", text);
+        }
     }
 }

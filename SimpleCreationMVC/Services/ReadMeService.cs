@@ -14,7 +14,24 @@ The project should download the following NuGet packages:
 PM> Install-Package Dapper
 PM> Install-Package Microsoft.Data.SqlClient
 
+For Auto Mapper Utility
 PM> Install-Package AutoMapper
+
+For App Utility
+PM> Install-Package Microsoft.Extensions.Configuration
+PM> Install-Package Microsoft.Extensions.Configuration.Json
+PM> Install-Package Microsoft.Extensions.Configuration.Binder
+
+
+
+
+Sample GetConnectionString using App Utility
+ICOnfigurationRoot _config = new AppUlitity().configuration;
+_config.GetConnectionString(""DefaultConnection"");
+
+Sample get item in appsetting.json
+ICOnfigurationRoot _config = new AppUlitity().configuration;
+_config[""JWT:Secret""];
 "
             ;
 
@@ -30,7 +47,25 @@ PM> Install-Package Microsoft.EntityFrameworkCore
 PM> Install-Package Microsoft.EntityFrameworkCore.Tools
 PM> Install-Package Microsoft.EntityFrameworkCore.SqlServer
 PM> Install-Package EFCore.BulkExtensions
+
+For Auto Mapper Utility
 PM> Install-Package AutoMapper
+
+For App Utility
+PM> Install-Package Microsoft.Extensions.Configuration
+PM> Install-Package Microsoft.Extensions.Configuration.Json
+PM> Install-Package Microsoft.Extensions.Configuration.Binder
+
+
+
+
+Sample GetConnectionString using App Utility
+ICOnfigurationRoot _config = new AppUlitity().configuration;
+_config.GetConnectionString(""DefaultConnection"");
+
+Sample get item in appsetting.json
+ICOnfigurationRoot _config = new AppUlitity().configuration;
+_config[""JWT:Secret""];
 "
             ;
 
