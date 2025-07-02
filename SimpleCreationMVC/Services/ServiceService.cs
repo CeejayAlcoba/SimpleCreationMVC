@@ -69,6 +69,10 @@ namespace Project.{FolderNames.Services}
         {{
             return await {repositoryName}.BulkUpsertAsync(data);
         }}
+        public async Task<IEnumerable<{tableName}>> BulkMergeAsync(List<{tableName}> data)
+        {{
+            return await {repositoryName}.BulkMergeAsync(data);
+        }}
     }}
 }}";
 

@@ -9,6 +9,7 @@
         GetById,
         BulkInsert,
         BulkUpdate,
-        BulkUpsert
+        BulkUpsert,
+        BulkMerge,
     }
 }

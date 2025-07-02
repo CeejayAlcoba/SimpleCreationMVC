@@ -23,7 +23,6 @@ namespace SimpleCreation.Services
         }
         public void CreateProcedureGeneric()
         {
-
             string text = $@"
 using Dapper;
 using Microsoft.Data.SqlClient;
@@ -42,9 +41,10 @@ namespace Project.{FolderNames.Repositories}
         public TProcedures? {ProcedureTypes.BulkInsert} {{ get; set; }}
         public TProcedures? {ProcedureTypes.BulkUpdate} {{ get; set; }}
         public TProcedures? {ProcedureTypes.BulkUpsert} {{ get; set; }}
+        public TProcedures? {ProcedureTypes.BulkMerge} {{ get; set; }}
     }}
 
-     public class GenericRepository<T, TProcedures>
+    public class GenericRepository<T, TProcedures>
         where T : class
         where TProcedures : struct, Enum
     {{
@@ -59,56 +59,87 @@ namespace Project.{FolderNames.Repositories}
             _connection = new SqlConnection(""{modifiedConnectionString}"");
         }}
 
+        private string EnsureProcedureName(TProcedures? procedure)
+        {{
+            if (procedure.ToString() == null || procedure?.ToString() == ""0""){{
+                string name = typeof(T).Name;
+                throw new InvalidOperationException($""Stored procedure for '{{name}}' is not defined."");
+            }}
+            return procedure.ToString();
+        }}
+
         public async Task<IEnumerable<T>> GetAllAsync()
         {{
-            return await _connection.QueryAsync<T>(_procedures.{ProcedureTypes.GetAll}.ToString(), commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAll});
+            return await _connection.QueryAsync<T>(proc, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         public async Task<T?> GetByIdAsync(int id)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.{ProcedureTypes.GetById}.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetById});
+            return await _connection.QueryFirstOrDefaultAsync<T>(proc, new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         public async Task<T?> InsertAsync(T entity)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.{ProcedureTypes.Insert}.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.Insert});
+            return await _connection.QueryFirstOrDefaultAsync<T>(proc, entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         public async Task<T?> UpdateAsync(T entity)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.{ProcedureTypes.Update}.ToString(), entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.Update});
+            return await _connection.QueryFirstOrDefaultAsync<T>(proc, entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         public async Task<T?> DeleteByIdAsync(int id)
         {{
-            return await _connection.QueryFirstOrDefaultAsync<T>(_procedures.{ProcedureTypes.DeleteById}.ToString(), new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.DeleteById});
+            return await _connection.QueryFirstOrDefaultAsync<T>(proc, new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<IEnumerable<T>> BulkInsertAsync( List<T> data)
+        public async Task<IEnumerable<T>> BulkInsertAsync(List<T> data)
         {{
+            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkInsert});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
-            return await _connection.QueryAsync<T>(_procedures.{ProcedureTypes.BulkInsert}.ToString(), new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<IEnumerable<T>> BulkUpdateAsync( List<T> data)
+        public async Task<IEnumerable<T>> BulkUpdateAsync(List<T> data)
         {{
+            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkUpdate});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
-            return await _connection.QueryAsync<T>(_procedures.{ProcedureTypes.BulkUpdate}.ToString(), new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<IEnumerable<T>> BulkUpsertAsync( List<T> data)
+        public async Task<IEnumerable<T>> BulkUpsertAsync(List<T> data)
         {{
+            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkUpsert});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
-            return await _connection.QueryAsync<T>(_procedures.{ProcedureTypes.BulkUpsert}.ToString(), new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        public async Task<IEnumerable<T>> BulkMergeAsync(List<T> data)
+        {{
+            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkMerge});
+            var dt = _dataTableUtility.Convert<T>(data);
+            var tableName = typeof(T).Name;
+            return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
     }}
 }}";
             fileService.Create(FolderNames.Repositories.ToString(), $"GenericRepository.cs", text);
-            
         }
+
         public void CreateDapperQueryGeneric()
         {
             string text = @"

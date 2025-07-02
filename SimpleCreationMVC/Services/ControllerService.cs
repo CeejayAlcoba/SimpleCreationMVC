@@ -81,7 +81,7 @@ namespace Project.ApiControllers
             }}
         }}
 
-        [HttpPut(""{{id}}"")]
+        [HttpPatch(""{{id}}"")]
         public async Task<IActionResult> UpdateAsync(int id,[FromBody]{table} {variableTableName})
         {{
             try
@@ -128,7 +128,7 @@ namespace Project.ApiControllers
                 return BadRequest(ex.Message);
             }}
         }}
-        [HttpPut(""bulk"")]
+        [HttpPatch(""bulk"")]
         public async Task<IActionResult> BulkUpdateAsync([FromBody] List<{table}> listData)
         {{
             try
@@ -141,7 +141,7 @@ namespace Project.ApiControllers
                 return BadRequest(ex.Message);
             }}
         }}
-        [HttpPut(""bulk-upsert"")]
+        [HttpPost(""bulk-upsert"")]
         public async Task<IActionResult> BulkUpsertAsync([FromBody] List<{table}> listData)
         {{
             try
@@ -154,6 +154,20 @@ namespace Project.ApiControllers
                 return BadRequest(ex.Message);
             }}
         }}
+        [HttpPost(""bulk-merge"")]
+        public async Task<IActionResult> BulkMergeAsync([FromBody] List<{table}> listData)
+        {{
+            try
+            {{
+                IEnumerable<{table}> data = await {serviceName}.BulkMergeAsync(listData);
+                return Ok(data);
+            }}
+            catch (Exception ex)
+            {{
+                return BadRequest(ex.Message);
+            }}
+        }}
+        
     }}
 }}
 ";

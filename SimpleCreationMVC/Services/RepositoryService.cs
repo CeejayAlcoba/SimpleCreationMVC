@@ -79,6 +79,10 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
                 {
                     keyValueList.Add($"{ProcedureTypes.BulkUpsert} = {tableName}Procedures.{tableName}_{ProcedureTypes.BulkUpsert}");
                 }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.BulkMerge}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.BulkMerge} = {tableName}Procedures.{tableName}_{ProcedureTypes.BulkMerge}");
+                }
 
                 string text = $@"
 using Project.{FolderNames.Models};
@@ -90,7 +94,7 @@ namespace Project.{FolderNames.Repositories}
     {{
         private static GenericProcedure<{tableName}Procedures> _procedures = new GenericProcedure<{tableName}Procedures>
         {{
-            {string.Join(",\n",keyValueList)}
+            {string.Join(",\t\t\t\n",keyValueList)}
         }};
         public {tableName}Repository() : base(_procedures)
         {{
