@@ -470,6 +470,8 @@ using Microsoft.EntityFrameworkCore;
 using Project." + FolderNames.ApplicationContexts.ToString() + @";
 using System.ComponentModel.DataAnnotations;
 using EFCore.BulkExtensions;
+using System.Reflection;
+using System.Linq.Expressions;
 
 namespace Project." + FolderNames.Repositories.ToString() + @"
 {
@@ -502,6 +504,7 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             await _context.SaveChangesAsync();
             return updateData;
         }
+
         public virtual async Task<T> DeleteByIdAsync(int id)
         {
             T? deletedData = await GetByIdAsync(id);
@@ -509,30 +512,93 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             await _context.SaveChangesAsync();
             return deletedData;
         }
+
         public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> list)
         {
             await _context.BulkUpdateAsync(list);
             await _context.SaveChangesAsync();
             return list;
         }
+
         public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> list)
         {
             await _context.BulkInsertAsync(list);
             await _context.SaveChangesAsync();
             return list;
         }
+
         public virtual async Task<IEnumerable<T>> BulkUpsertAsync(List<T> entities)
         {
-            // Get the primary key property info
+            var (entitiesToInsert, entitiesToUpdate) = SeparateEntities(entities);
+
+            // Bulk Insert
+            if (entitiesToInsert.Any())
+            {
+                await _context.BulkInsertAsync(entitiesToInsert);
+            }
+
+            // Bulk Update
+            if (entitiesToUpdate.Any())
+            {
+                await _context.BulkUpdateAsync(entitiesToUpdate);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return entities;
+        }
+
+        public virtual async Task<IEnumerable<T>> BulkMergeAsync(List<T> entities, Expression<Func<T, bool>>? deleteFilter = null)
+        {
+            var keyProperty = GetKeyProperty();
+
+            var keepIds = entities
+                            .Select(x => keyProperty.GetValue(x))
+                            .Where(id => id != null && Convert.ToInt32(id) > 0)
+                            .Cast<int>()
+                            .ToList();
+
+            IQueryable<T> query = _context.Set<T>();
+
+            if (deleteFilter != null)
+            {
+                query = query.Where(deleteFilter);
+            }
+
+            if (keepIds.Any())
+            {
+                var entitiesToDelete = await query
+                    .Where(x => !keepIds.Contains(EF.Property<int>(x, keyProperty.Name)))
+                    .ToListAsync();
+
+                if (entitiesToDelete.Any())
+                {
+                    await _context.BulkDeleteAsync(entitiesToDelete);
+                }
+            }
+
+            await BulkUpsertAsync(entities);
+
+            return entities;
+        }
+
+        private PropertyInfo GetKeyProperty()
+        {
             var keyProperty = typeof(T).GetProperties()
-                .FirstOrDefault(p => p.GetCustomAttributes(typeof(KeyAttribute), true).Any());
+                                .FirstOrDefault(p => p.GetCustomAttributes(typeof(KeyAttribute), true).Any());
 
             if (keyProperty == null)
                 throw new InvalidOperationException($""No key property found for entity type {typeof(T).Name}"");
 
-            // Separate entities into insert and update lists
-            var toInsert = new List<T>();
-            var toUpdate = new List<T>();
+            return keyProperty;
+        }
+
+        private (List<T> entitiesToInsert, List<T> entitiesToUpdate) SeparateEntities(List<T> entities)
+        {
+            var entitiesToInsert = new List<T>();
+            var entitiesToUpdate = new List<T>();
+
+            var keyProperty = GetKeyProperty();
 
             foreach (var entity in entities)
             {
@@ -543,36 +609,20 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
 
                 if (isDefaultKey)
                 {
-                    toInsert.Add(entity);
+                    entitiesToInsert.Add(entity);
                 }
                 else
                 {
-                    toUpdate.Add(entity);
+                    entitiesToUpdate.Add(entity);
                 }
             }
-
-            // Perform insert operations
-            if (toInsert.Any())
-            {
-                await _context.BulkInsertAsync(toInsert);
-            }
-
-            // Perform update operations
-            if (toUpdate.Any())
-            {
-                await _context.BulkUpdateAsync(toUpdate);
-            }
-
-            await _context.SaveChangesAsync();
-
-            // Return all processed entities
-            return entities;
+            return (entitiesToInsert, entitiesToUpdate);
         }
+
         private int? GetKeyValueAsInt(T entity)
         {
             var entityType = typeof(T);
-            var keyProperty = entityType.GetProperties()
-                .FirstOrDefault(prop => Attribute.IsDefined(prop, typeof(KeyAttribute)));
+            var keyProperty = GetKeyProperty();
 
             if (keyProperty == null)
             {
