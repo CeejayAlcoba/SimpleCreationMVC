@@ -235,6 +235,7 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             }
             return result;
         }
+
         public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> list)
         {
             List<T> result = new List<T>();
@@ -245,6 +246,7 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             }
             return result;
         }
+
         public virtual async Task<IEnumerable<T>> BulkUpsertAsync(IEnumerable<T> entities)
         {
             List<T> result = new List<T>();
@@ -266,6 +268,76 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
                 }
             }
             return result;
+        }
+
+        public virtual async Task<IEnumerable<T>> BulkMergeAsync(IEnumerable<T> entities  ,string? filterColumnName = null, object? filterValue = null)
+        {
+            string tableName = GetTableName();
+            string keyColumn = GetKeyColumnName();
+            string keyProperty = GetKeyPropertyName();
+
+            var properties = GetProperties(excludeKey: true);
+
+            var entitiesToInsert = new List<T>();
+            var entitiesToUpdate = new List<T>();
+
+            // ✅ Classify first
+            foreach (var entity in entities)
+            {
+                var keyValue = typeof(T).GetProperty(keyProperty)?.GetValue(entity);
+
+                if (keyValue == null || Convert.ToInt32(keyValue) == 0)
+                {
+                    entitiesToInsert.Add(entity);
+                }
+                else
+                {
+                    entitiesToUpdate.Add(entity);
+                }
+            }
+
+            //Bulk Update
+            await BulkUpdateAsync(entitiesToUpdate);
+
+
+            var keepIds = entities
+                            .Select(x => typeof(T).GetProperty(keyProperty)?.GetValue(x))
+                            .Where(id => id != null && Convert.ToInt32(id) > 0)
+                            .Cast<int>()
+                            .ToList();
+
+            //Bulk Delete
+            await BulkDeleteAsync(entities, keepIds, filterColumnName, filterValue);
+
+            //Bulk Insert
+            await BulkInsertAsync(entitiesToInsert);
+
+            return entities;
+        }
+
+        public async Task<IEnumerable<T>> BulkDeleteAsync(IEnumerable<T> entities,List<int>? keepIds, string? filterColumnName = null, object? filterValue = null)
+        {
+
+            string tableName = GetTableName();
+            string keyColumn = GetKeyColumnName();
+            string keyProperty = GetKeyPropertyName();
+
+            var deleteSql = new StringBuilder();
+            deleteSql.AppendLine($""DELETE FROM {tableName}"");
+            deleteSql.AppendLine($""WHERE {keyColumn} NOT IN @Ids"");
+            
+            if (!string.IsNullOrWhiteSpace(filterColumnName) && filterValue != null)
+            {
+                deleteSql.AppendLine($""AND {filterColumnName} = @FilterValue"");
+            }
+
+            await _connection.ExecuteAsync(deleteSql.ToString(), new
+            {
+                Ids = keepIds,
+                FilterValue = filterValue
+            });
+            
+            return entities;
         }
         private string GetTableName()
         {
