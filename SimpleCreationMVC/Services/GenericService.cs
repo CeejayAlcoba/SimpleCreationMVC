@@ -270,35 +270,11 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             return result;
         }
 
-        public virtual async Task<IEnumerable<T>> BulkMergeAsync(IEnumerable<T> entities  ,string? filterColumnName = null, object? filterValue = null)
+         public virtual async Task<IEnumerable<T>> BulkMergeAsync(IEnumerable<T> entities  ,string? filterColumnName = null, object? filterValue = null)
         {
             string tableName = GetTableName();
             string keyColumn = GetKeyColumnName();
             string keyProperty = GetKeyPropertyName();
-
-            var properties = GetProperties(excludeKey: true);
-
-            var entitiesToInsert = new List<T>();
-            var entitiesToUpdate = new List<T>();
-
-            // ✅ Classify first
-            foreach (var entity in entities)
-            {
-                var keyValue = typeof(T).GetProperty(keyProperty)?.GetValue(entity);
-
-                if (keyValue == null || Convert.ToInt32(keyValue) == 0)
-                {
-                    entitiesToInsert.Add(entity);
-                }
-                else
-                {
-                    entitiesToUpdate.Add(entity);
-                }
-            }
-
-            //Bulk Update
-            await BulkUpdateAsync(entitiesToUpdate);
-
 
             var keepIds = entities
                             .Select(x => typeof(T).GetProperty(keyProperty)?.GetValue(x))
@@ -309,8 +285,8 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
             //Bulk Delete
             await BulkDeleteAsync(entities, keepIds, filterColumnName, filterValue);
 
-            //Bulk Insert
-            await BulkInsertAsync(entitiesToInsert);
+            //Bulk Insert and Update
+            await BulkUpsertAsync(entities);
 
             return entities;
         }
