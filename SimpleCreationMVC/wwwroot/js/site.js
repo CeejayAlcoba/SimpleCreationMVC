@@ -248,12 +248,27 @@ const handleClickPdfButton = () => {
         container.style.display = 'block';
 
         await html2pdf().from(container).set({
-            margin: 0.5,
+            margin: [0.5, 0.5, 1, 0.5],
             filename: 'table-schema.pdf',
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        }).save();
+        })
+            .toPdf()
+            .get('pdf')
+            .then(function (pdf) {
+                const totalPages = pdf.internal.getNumberOfPages();
+                const today = new Date().toLocaleDateString();
+
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(10);
+                    pdf.text(`Page ${i} of ${totalPages}`, 0.5, 10.5);  // bottom left
+                    pdf.text(`Date: ${today}`, 6.5, 10.5);              // bottom right
+                }
+            })
+            .save();
+
 
         container.style.display = 'none';
     });
