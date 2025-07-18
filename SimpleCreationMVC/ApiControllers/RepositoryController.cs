@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
+using SimpleCreationMVC.Services.RepositoryServices;
 
 namespace SimpleCreationMVC.ApiControllers
 {
@@ -15,10 +16,10 @@ namespace SimpleCreationMVC.ApiControllers
             try
             {
                 FileService _fileService = new FileService();
-                RepositoryService _repositoryService = new RepositoryService(connectionString);
+                RepositoryMainService _repositoryMainService = new RepositoryMainService(connectionString);
 
                 _fileService.Delete();
-                _repositoryService.CreateRepositoriesFiles(tableSchemas);
+                _repositoryMainService.CreateCommon(tableSchemas);
 
                 return Ok();
             }

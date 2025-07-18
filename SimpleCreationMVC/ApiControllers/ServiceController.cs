@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
+using SimpleCreationMVC.Services.ServiceServices;
 
 namespace SimpleCreationMVC.ApiControllers
 {
@@ -15,10 +16,10 @@ namespace SimpleCreationMVC.ApiControllers
             try
             {
                 FileService _fileService = new FileService();
-                ServiceService _serviceService = new ServiceService();
+                ServiceMainService _serviceMainService = new ServiceMainService();
 
                 _fileService.Delete();
-                _serviceService.CreateServicesFiles(tableSchemas);
+                _serviceMainService.CreateCommon(tableSchemas);
 
                 return Ok();
             }

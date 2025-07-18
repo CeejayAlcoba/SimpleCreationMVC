@@ -3,6 +3,10 @@ using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 using SimpleCreationMVC.Services;
+using SimpleCreationMVC.Services.GenericServices;
+using SimpleCreationMVC.Services.RepositoryServices;
+using SimpleCreationMVC.Services.ServiceServices;
+using SimpleCreationMVC.Services.UtilityServices;
 
 namespace SimpleCreation.ApiControllers
 {
@@ -15,23 +19,21 @@ namespace SimpleCreation.ApiControllers
             try
             {
                 FileService _fileService = new FileService();
-                GenericService _genericService = new GenericService(connectionString);
+                GenericMainService _genericMainService = new GenericMainService(connectionString);
                 ModelService _modelService = new ModelService(connectionString);
-                RepositoryService _repositoryService = new RepositoryService(connectionString);
-                ServiceService _serviceService = new ServiceService();
+                RepositoryMainService _repositoryMainService = new RepositoryMainService(connectionString);
+                ServiceMainService _serviceMainService = new ServiceMainService();
                 ControllerService _controllerService = new ControllerService(connectionString);
                 ReadMeService _readMeService = new ReadMeService();
-                UtilityService _utilityService = new UtilityService();
+                UtilityMainService _utilityMainService = new UtilityMainService();
 
                 _fileService.Delete();
-                _genericService.CreateEFCoreContext();
-                _genericService.CreateEFCoreGeneric();
+                _genericMainService.CreateEFCore();
                 _modelService.CreateModelClassesFiles(tableSchemas);
-                _repositoryService.CreateRepositoriesFiles(tableSchemas);
-                _serviceService.CreateServicesFiles(tableSchemas);
+                _repositoryMainService.CreateCommon(tableSchemas);
+                _serviceMainService.CreateCommon(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
-                _utilityService.CreateAutoMapperUtilityFile();
-                _utilityService.CreateAppUtilityFile();
+                _utilityMainService.Create();
                 _readMeService.CreateEFCoreNote();
 
                 return Ok();

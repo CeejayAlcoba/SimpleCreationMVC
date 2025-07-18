@@ -4,6 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using SimpleCreation.Models;
 using SimpleCreation.Services;
 using SimpleCreationMVC.Services;
+using SimpleCreationMVC.Services.GenericServices;
+using SimpleCreationMVC.Services.RepositoryServices;
+using SimpleCreationMVC.Services.ServiceServices;
+using SimpleCreationMVC.Services.UtilityServices;
 using System.IO;
 
 namespace SimpleCreation.ApiControllers
@@ -17,26 +21,24 @@ namespace SimpleCreation.ApiControllers
             try
             {
                 FileService _fileService = new FileService();
-                GenericService _genericService = new GenericService(connectionString);
+                GenericMainService _genericMainService = new GenericMainService(connectionString);
                 ModelService _modelService = new ModelService(connectionString);
-                RepositoryService _repositoryService = new RepositoryService(connectionString);
+                RepositoryMainService _repositoryMainService = new RepositoryMainService(connectionString);
                 StoredProcedureService _storedProcedureService = new StoredProcedureService(connectionString);
-                ServiceService _serviceService = new ServiceService();
+                ServiceMainService _serviceMainService = new ServiceMainService();
                 ControllerService _controllerService = new ControllerService(connectionString);
                 ReadMeService _readMeService = new ReadMeService();
-                UtilityService _utilityService = new UtilityService();
-
+                UtilityMainService _utilityMainService = new UtilityMainService();
+                    
                 _fileService.Delete();
-                _genericService.CreateProcedureGeneric();
+                _genericMainService.CreateStoredProcedure();
                 _modelService.CreateModelClassesFiles(tableSchemas);
-                _repositoryService.CreateRepositoryStoredProcedureFile(tableSchemas);
+                _repositoryMainService.CreateStoredProcedure(tableSchemas);
                 _storedProcedureService.CreateStoredProceduresFiles(tableSchemas);
                 _storedProcedureService.CreateEnumProceduresFile();
-                _serviceService.CreateServicesFiles(tableSchemas);
+                _serviceMainService.CreateCommon(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
-                _utilityService.CreateAutoMapperUtilityFile();
-                _utilityService.CreateDataTableUtilityFile();
-                _utilityService.CreateAppUtilityFile();
+                _utilityMainService.Create();
                 _readMeService.CreateDapperNote();
 
                 return Ok();

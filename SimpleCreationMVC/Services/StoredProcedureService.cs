@@ -208,7 +208,7 @@ GO
                     StringBuilder text = new StringBuilder();
 
                     text.AppendLine($@"
-namespace Project.{FolderNames.ProcedureEnums}
+namespace {FolderNames.ProcedureEnums}
 {{
     // Procedures for the {tableName} table
     public enum {tableName}Procedures

@@ -1,22 +1,20 @@
 ﻿using SimpleCreation.Models;
 using SimpleCreation.Services;
 
-namespace SimpleCreationMVC.Services
+namespace SimpleCreationMVC.Services.UtilityServices
 {
-    public class UtilityService
+    public class UtilityClassesService
     {
         public FileService _fileService = new FileService();
-        public void CreateAutoMapperUtilityFile()
+        public void CreateAutoMapperUtility()
         {
             var text = $@"
 using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using {FolderNames.Utilities}.{FolderNames.Interfaces};
 
-namespace Project.{FolderNames.Utilities}
+namespace {FolderNames.Utilities}.{FolderNames.Classes}
 {{
-    public class AutoMapperUtility
+    public class AutoMapperUtility : IAutoMapperUtility
     {{
         public TDestination Map<TDestination>(object source)
         {{
@@ -50,18 +48,19 @@ namespace Project.{FolderNames.Utilities}
     }}
 }}
 ";
-            _fileService.Create(FolderNames.Utilities.ToString(), "AutoMapperUtility.cs", text);
+            _fileService.Create(FolderPaths.UtilitiesClassesFolder, "AutoMapperUtility.cs", text);
         }
 
-        public void CreateDataTableUtilityFile()
+        public void CreateDataTableUtility()
         {
             var text = $@"
 using System.Data;
 using System.Reflection;
+using {FolderNames.Utilities}.{FolderNames.Interfaces};
 
-namespace Project.{FolderNames.Utilities}
+namespace {FolderNames.Utilities}.{FolderNames.Classes}
 {{
-    public class DataTableUtility
+    public class DataTableUtility : IDataTableUtility
     {{
         public DataTable Convert<T>(IEnumerable<T> lists) where T : class
         {{
@@ -95,25 +94,28 @@ namespace Project.{FolderNames.Utilities}
 }}
 
 ";
-            _fileService.Create(FolderNames.Utilities.ToString(), "DataTableUtility.cs", text);
+            _fileService.Create(FolderPaths.UtilitiesClassesFolder, "DataTableUtility.cs", text);
         }
 
-        public void CreateAppUtilityFile()
+        public void CreateAppUtility()
         {
             var text = $@"
-using Microsoft.Extensions.Configuration;
-namespace Repositories.Utilities
+using {FolderNames.Utilities}.{FolderNames.Interfaces};
+
+namespace {FolderNames.Utilities}.{FolderNames.Classes}
 {{
-    public class AppUtility
+    public class AppUtility : IAppUtility
     {{ 
-           public IConfigurationRoot configuration = new ConfigurationBuilder()
+        public IConfigurationRoot GetConfiguration() {{  
+            return new ConfigurationBuilder()
            .SetBasePath(Directory.GetCurrentDirectory())
            .AddJsonFile(""appsettings.json"", optional: false, reloadOnChange: true)
            .Build();
+        }}
     }}
 }}
 ";
-            _fileService.Create(FolderNames.Utilities.ToString(), "AppUtility.cs", text);
+            _fileService.Create(FolderPaths.UtilitiesClassesFolder, "AppUtility.cs", text);
         }
     }
 }

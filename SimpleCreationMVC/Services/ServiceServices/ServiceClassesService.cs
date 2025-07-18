@@ -1,37 +1,34 @@
 ﻿using SimpleCreation.Models;
+using SimpleCreation.Services;
 
-namespace SimpleCreation.Services
+namespace SimpleCreationMVC.Services.ServiceServices
 {
-    public class ServiceService
+    public class ServiceClassesService
     {
-        private readonly FileService fileService = new FileService();
-        private readonly TextService textService = new TextService();
-        public void CreateServicesFiles(List<TableSchema> tableSchemas)
-        {
-            foreach (var tableSchema in tableSchemas)
-            {
-                if (tableSchema.isServiceFileAllowed == false) continue;
-
-                string tableName = tableSchema.TABLE_NAME;
-                string text = GenerateServiceText(tableName);
-                fileService.Create(FolderNames.Services.ToString(), $"{tableName}Service.cs", text);
-            }
-        }
-        public string GenerateServiceText(string tableName)
+        private readonly FileService _fileService = new FileService();
+        private readonly TextService _textService = new TextService();
+        public void Create(string tableName)
         {
             string repository = $"{tableName}Repository";
-            string repositoryName = $"_{textService.ToCamelCase(repository)}";
+            string repositoryName = $"_{_textService.ToCamelCase(repository)}";
+            string repositoryCamel = $"{_textService.ToCamelCase(repository)}";
             string serviceName = $"{tableName}Service";
 
             string text = $@"
-using Project.{FolderNames.Models};
-using Project.{FolderNames.Repositories};
+using {FolderNames.Models};
+using {FolderNames.Repositories}.{FolderNames.Interfaces};
+using {FolderNames.Services}.{FolderNames.Interfaces};
 
-namespace Project.{FolderNames.Services}
+namespace {FolderNames.Services}.{FolderNames.Classes}
 {{
-    public class {serviceName}
+    public class {serviceName} : I{serviceName}
     {{
-        private readonly {repository} {repositoryName} = new {repository}();
+        private readonly I{repository} {repositoryName};
+
+        public TasktblService(I{repository} {repositoryCamel})
+        {{
+            {repositoryName} = {repositoryCamel};
+        }}
 
         public async Task<{tableName}?> InsertAsync({tableName} data)
         {{
@@ -75,8 +72,7 @@ namespace Project.{FolderNames.Services}
         }}
     }}
 }}";
-
-            return text;
+            _fileService.Create(FolderPaths.ServicesClassesFolder, $"{tableName}Service.cs", text);
         }
     }
 }

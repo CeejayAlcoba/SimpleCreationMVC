@@ -1,53 +1,18 @@
-﻿
-using System.Text;
-using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
-using SimpleCreation.Models;
+﻿using SimpleCreation.Models;
+using SimpleCreation.Services;
 
-namespace SimpleCreation.Services
+namespace SimpleCreationMVC.Services.RepositoryServices
 {
-    public class RepositoryService
+    public class RepositoryClassesService
     {
         private readonly FileService fileService = new FileService();
-        private readonly StoredProcedureService _storedProcedureService;
         private readonly SqlService _sqlService;
-        public RepositoryService(string connectionString)
+        public RepositoryClassesService(string connectionString)
         {
-            _storedProcedureService = new StoredProcedureService(connectionString);
             _sqlService = new SqlService(connectionString);
-         
         }
-        public void CreateRepositoriesFiles(List<TableSchema> tableSchemas)
+        public void CreateStoredProcedure(string tableName)
         {
-
-            foreach (var table in tableSchemas)
-            {
-                string tableName = table.TABLE_NAME;
-                CreateRepositoryFile(tableName);
-            }
-
-        }
-        public void CreateRepositoryFile(string tableName)
-        {
-            string text = @"
-using Project." + FolderNames.Models.ToString() + @";
-
-namespace Project." + FolderNames.Repositories.ToString() + @"
-{
-    public class " + tableName + "Repository : GenericRepository<" + tableName + @">
-    {
-
-    }
-}
-";
-            fileService.Create(FolderNames.Repositories.ToString(), $"{tableName}Repository.cs", text);
-        }
-
-        public void CreateRepositoryStoredProcedureFile(List<TableSchema> tableSchemas)
-        {
-            foreach (var table in tableSchemas)
-            {
-                var tableName = table.TABLE_NAME;
                 var storedProcedures = _sqlService.GetStoredProceduresByTable(tableName);
                 var keyValueList = new List<string>();
 
@@ -67,6 +32,10 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
                 {
                     keyValueList.Add($"{ProcedureTypes.Update} = {tableName}Procedures.{tableName}_{ProcedureTypes.Update}");
                 }
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.DeleteById}"))
+                {
+                    keyValueList.Add($"{ProcedureTypes.DeleteById} = {tableName}Procedures.{tableName}_{ProcedureTypes.DeleteById}");
+                }
                 if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.BulkInsert}"))
                 {
                     keyValueList.Add($"{ProcedureTypes.BulkInsert} = {tableName}Procedures.{tableName}_{ProcedureTypes.BulkInsert}");
@@ -85,28 +54,41 @@ namespace Project." + FolderNames.Repositories.ToString() + @"
                 }
 
                 string text = $@"
-using Project.{FolderNames.Models};
-using Project.{FolderNames.ProcedureEnums};
+using {FolderNames.Models};
+using {FolderNames.ProcedureEnums};
+using {FolderNames.Repositories}.{FolderNames.Interfaces};
 
-namespace Project.{FolderNames.Repositories}
+namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
-    public class {tableName}Repository : GenericRepository<{tableName}, {tableName}Procedures>
+    public class {tableName}Repository : GenericRepository<{tableName}, {tableName}Procedures>, I{tableName}Repository
     {{
         private static GenericProcedure<{tableName}Procedures> _procedures = new GenericProcedure<{tableName}Procedures>
         {{
-            {string.Join(",\t\t\t\n",keyValueList)}
+            {string.Join(",\n\t\t\t", keyValueList)}
         }};
         public {tableName}Repository() : base(_procedures)
         {{
         }}
     }}
 }}";
-
-                // Create the repository file for the table
-                fileService.Create(FolderNames.Repositories.ToString(), $"{tableName}Repository.cs", text);
+                fileService.Create(FolderPaths.RepositoriesClassesFolder, $"{tableName}Repository.cs", text);
             }
-        }
+        
 
+        public void CreateCommon(string tableName)
+        {
+            string text = $@"
+using {FolderNames.Models};
+using {FolderNames.Repositories}.{FolderNames.Interfaces};
+
+namespace {FolderNames.Repositories}.{FolderNames.Classes}
+{{
+    public class {tableName}Repository : GenericRepository<{tableName}>, I{tableName}Repository
+    {{
+    }}
+}}
+";
+            fileService.Create(FolderPaths.RepositoriesClassesFolder, $"{tableName}Repository.cs", text);
+        }
     }
 }
-

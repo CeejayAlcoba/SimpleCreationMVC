@@ -25,18 +25,24 @@ namespace SimpleCreation.Services
             string variableTableName = textService.ToCamelCase(table);
             string service = $"{tableName}Service";
             string serviceName = $"_{textService.ToCamelCase(service)}";
+            string serviceCammel = $"{textService.ToCamelCase(service)}";
             string text = $@"
 using Microsoft.AspNetCore.Mvc;
-using Project.{FolderNames.Models.ToString()};
-using Project.{FolderNames.Services.ToString()};
+using {FolderNames.Models};
+using {FolderNames.Services}.{FolderNames.Interfaces};
 
-namespace Project.ApiControllers
+namespace ApiControllers
 {{
     [Route(""api/{textService.ToKebabCase(table)}"")]
     [ApiController]
     public class {table}Controller : ControllerBase
     {{
-        private readonly {service} {serviceName} = new {service}();
+        private readonly I{service} {serviceName};
+
+        public {table}Controller(I{service} {serviceCammel})
+        {{
+            {serviceName} = {serviceCammel};
+        }}
 
         [HttpGet(""list"")]
         public async Task<IActionResult> GetAllAsync()

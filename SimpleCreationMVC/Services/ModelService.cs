@@ -61,16 +61,16 @@ namespace SimpleCreation.Services
 
                 columns.AppendLine(columnText);
             }
-            string text = @"
+            string text = $@"
 using System.ComponentModel.DataAnnotations;
 
-namespace Project."+FolderNames.Models.ToString()+@"
-{
-    public class "+model.Name+@"
-     {
-		"+columns+@"
-     }
-}
+namespace {FolderNames.Models.ToString()}
+{{
+    public class {model.Name}
+    {{
+		{columns}
+    }}
+}}
 ";
             fileService.Create(FolderNames.Models.ToString(), $"{model.Name}.cs", text);
         }

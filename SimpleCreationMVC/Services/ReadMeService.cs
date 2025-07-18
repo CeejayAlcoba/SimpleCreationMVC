@@ -22,7 +22,10 @@ PM> Install-Package Microsoft.Extensions.Configuration
 PM> Install-Package Microsoft.Extensions.Configuration.Json
 PM> Install-Package Microsoft.Extensions.Configuration.Binder
 
-
+In Program.cs (Main project) add this 
+builder.Services.AddRepositories();
+builder.Services.AddServices();
+builder.Services.AddUtilities();
 
 
 Sample GetConnectionString using App Utility
@@ -56,8 +59,10 @@ PM> Install-Package Microsoft.Extensions.Configuration
 PM> Install-Package Microsoft.Extensions.Configuration.Json
 PM> Install-Package Microsoft.Extensions.Configuration.Binder
 
-
-
+In Program.cs (Main project) add this 
+builder.Services.AddRepositories();
+builder.Services.AddServices();
+builder.Services.AddUtilities();
 
 Sample GetConnectionString using App Utility
 ICOnfigurationRoot _config = new AppUlitity().configuration;
