@@ -2,9 +2,11 @@ $(_ => {
     generateDownloadOptions();
     handleOnClickDownloadButton();
     disabledDownloadButton();
+    disabledPrintButton();
 
     handleConnectionStringOnChange();
     handleClickGenerateBtn();
+    handleClickPrintButton();
     handleClickSystemDownloadBtn();
 
     handleTableFilterOnChange();
@@ -223,6 +225,19 @@ const handleOnClickDownloadButton = () => {
     })
 }
 
+const handleClickPrintButton = () => {
+    $('#print-btn').on('click', function () {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.open();
+        printWindow.document.write(generatePrintContent());
+        printWindow.document.close();
+
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    });
+}
+
 const handleClickSystemDownloadBtn = () => {
     $("#system-download-btn").on("click", async () => {
         await downloadSystemPublished();
@@ -234,10 +249,16 @@ const disabledDownloadButton = () => {
     $("#download-btn").prop("disabled", isDisabled)
 }
 
+const disabledPrintButton = () => {
+    const isDisabled = !getConnectionStringEncodedUri() || tempTableSchemas.length == 0;
+    $("#print-btn").prop("disabled", isDisabled)
+}
+
 const handleClickGenerateBtn = () => {
     $("#generate-btn").on("click", async () => {
         await handleGenerateTempTableSchemas();
         disabledDownloadButton();
+        disabledPrintButton();
         generateTableFilterOptions();
     })
 }
@@ -377,6 +398,75 @@ const tableSchemaComponent = ({ title, schema, headers = [] }) => {
 const isLoading = async (isloading) => {
     await $('.loading-overlay').css('display', isloading ? '' :'none')
 }
+function generatePrintContent() {
+    let html = `<html><head><title>Print</title>
+      <style>
+        body {
+          font-family: sans-serif;
+          padding: 20px;
+        }
+        .table-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+        }
+        .table-item {
+          width: calc(50% - 10px); /* two columns */
+          box-sizing: border-box;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        th, td {
+          border: 1px solid #000;
+          padding: 6px;
+          font-size: 14px;
+        }
+        th {
+          background-color: #f0f0f0;
+        }
+        h2 {
+          margin: 0;
+          font-size: 16px;
+        }
+        @media print {
+          body {
+            margin: 0;
+          }
+        }
+      </style>
+      </head><body>
+      <div class="table-grid">`;
+
+    tempTableSchemas.forEach(schema => {
+        html += `<div class="table-item">
+            <h2>Table: ${schema.tablE_NAME}</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Column Name</th>
+                  <th>Data Type</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+        schema.columns.forEach(col => {
+            html += `
+                <tr>
+                  <td>${col.columN_NAME}</td>
+                  <td>${col.datA_TYPE}</td>
+                </tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+    });
+
+    html += `</div></body></html>`;
+    return html;
+}
+
 
 
 
