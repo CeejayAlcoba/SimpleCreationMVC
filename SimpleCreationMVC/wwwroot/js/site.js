@@ -3,10 +3,12 @@ $(_ => {
     handleOnClickDownloadButton();
     disabledDownloadButton();
     disabledPrintButton();
+    disabledPdfButton();
 
     handleConnectionStringOnChange();
     handleClickGenerateBtn();
     handleClickPrintButton();
+    handleClickPdfButton();
     handleClickSystemDownloadBtn();
 
     handleTableFilterOnChange();
@@ -237,6 +239,25 @@ const handleClickPrintButton = () => {
         printWindow.close();
     });
 }
+const handleClickPdfButton = () => {
+    $('#pdf-btn').on('click', async function () {
+        const html = generatePrintContent();
+
+        const container = document.getElementById('document-container');
+        container.innerHTML = html;
+        container.style.display = 'block';
+
+        await html2pdf().from(container).set({
+            margin: 0.5,
+            filename: 'table-schema.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        }).save();
+
+        container.style.display = 'none';
+    });
+}
 
 const handleClickSystemDownloadBtn = () => {
     $("#system-download-btn").on("click", async () => {
@@ -254,11 +275,17 @@ const disabledPrintButton = () => {
     $("#print-btn").prop("disabled", isDisabled)
 }
 
+const disabledPdfButton = () => {
+    const isDisabled = !getConnectionStringEncodedUri() || tempTableSchemas.length == 0;
+    $("#pdf-btn").prop("disabled", isDisabled)
+}
+
 const handleClickGenerateBtn = () => {
     $("#generate-btn").on("click", async () => {
         await handleGenerateTempTableSchemas();
         disabledDownloadButton();
         disabledPrintButton();
+        disabledPdfButton();
         generateTableFilterOptions();
     })
 }
@@ -400,72 +427,82 @@ const isLoading = async (isloading) => {
 }
 function generatePrintContent() {
     let html = `<html><head><title>Print</title>
-      <style>
+    <style>
+      .body-document {
+        font-family: sans-serif;
+        padding: 40px;
+      }
+      .table-document .table-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .table-document .table-item {
+        width: calc(50% - 10px);
+        box-sizing: border-box;
+      }
+
+      .table-document table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .table-document th,
+      .table-document td {
+        border: 1px solid #000;
+        padding: 6px;
+        font-size: 14px;
+      }
+
+      .table-document th {
+        background-color: #f0f0f0;
+      }
+
+      .table-document h2 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      @media print {
         body {
-          font-family: sans-serif;
-          padding: 20px;
-        }
-        .table-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
-        }
-        .table-item {
-          width: calc(50% - 10px); /* two columns */
-          box-sizing: border-box;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 10px;
-        }
-        th, td {
-          border: 1px solid #000;
-          padding: 6px;
-          font-size: 14px;
-        }
-        th {
-          background-color: #f0f0f0;
-        }
-        h2 {
           margin: 0;
-          font-size: 16px;
         }
-        @media print {
-          body {
-            margin: 0;
-          }
-        }
-      </style>
-      </head><body>
+      }
+    </style>
+  </head>
+  <body class="body-document">
+    <div class="table-document">
       <div class="table-grid">`;
 
     tempTableSchemas.forEach(schema => {
         html += `<div class="table-item">
-            <h2>Table: ${schema.tablE_NAME}</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Column Name</th>
-                  <th>Data Type</th>
-                </tr>
-              </thead>
-              <tbody>`;
+        <h2>Table: ${schema.tablE_NAME}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Column Name</th>
+              <th>Data Type</th>
+            </tr>
+          </thead>
+          <tbody>`;
 
         schema.columns.forEach(col => {
             html += `
-                <tr>
-                  <td>${col.columN_NAME}</td>
-                  <td>${col.datA_TYPE}</td>
-                </tr>`;
+            <tr>
+              <td>${col.columN_NAME}</td>
+              <td>${col.datA_TYPE}</td>
+            </tr>`;
         });
 
         html += `</tbody></table></div>`;
     });
 
-    html += `</div></body></html>`;
+    html += `</div></div></body></html>`;
     return html;
 }
+
 
 
 
