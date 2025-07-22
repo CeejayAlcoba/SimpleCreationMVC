@@ -64,10 +64,10 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return procedure.ToString() ?? """";
         }}
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
         {{
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAll});
-            return await _connection.QueryAsync<T>(proc, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            return await _connection.QueryAsync<T>(proc, filter, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
         public async Task<T?> GetByIdAsync(int id)
@@ -184,12 +184,47 @@ namespace {FolderNames.Repositories.ToString()}
             return deletedData;
         }}
 
-        public virtual async Task<IEnumerable<T>> GetAllAsync()
+        public virtual async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
         {{
             string tableName = GetTableName();
-            string query = $""SELECT * FROM {{tableName}}"";
-            return await _connection.QueryAsync<T>(query);
+            var properties = typeof(T).GetProperties();
+        
+            var whereConditions = new List<string>();
+            var parameters = new DynamicParameters();
+        
+            foreach (var prop in properties)
+            {{
+                var columnAttr = prop.GetCustomAttribute<ColumnAttribute>();
+                var columnName = columnAttr != null ? columnAttr.Name : prop.Name;
+                var value = filter == null ? null : prop.GetValue(filter);
+        
+                // Add filter only if value is not null
+                if (value != null)
+                {{
+                    whereConditions.Add($""(@{{columnName}} IS NULL OR {{columnName}} = @{{columnName}})"");
+                    parameters.Add($""@{{columnName}}"", value);
+                }}
+                else
+                {{
+                    // Still include it to match the stored procedure behavior
+                    whereConditions.Add($""(@{{columnName}} IS NULL OR {{columnName}} = @{{columnName}})"");
+                    parameters.Add($""@{{columnName}}"", null);
+                }}
+            }}
+        
+            string whereClause = whereConditions.Count > 0
+                ? ""WHERE "" + string.Join("" AND "", whereConditions)
+                : """";
+        
+            string query = $@""
+        SELECT * 
+        FROM {{tableName}}
+        {{whereClause}}
+        "";
+        
+            return await _connection.QueryAsync<T>(query, parameters);
         }}
+
 
         public virtual async Task<T?> GetByIdAsync(int Id)
         {{
@@ -454,16 +489,44 @@ namespace {FolderNames.Repositories.ToString()}
     {{
         private readonly ApplicationContext _context = new ApplicationContext();
 
-        public virtual async Task<T> InsertAsync(T entity)
+        public virtual async Task<T?> InsertAsync(T entity)
         {{
             await _context.Set<T>().AddAsync(entity);
             await _context.SaveChangesAsync();
             return entity;
         }}
 
-        public virtual async Task<IEnumerable<T>> GetAllAsync()
+        public virtual async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
         {{
-            return await _context.Set<T>().ToListAsync();
+            IQueryable<T> query = _context.Set<T>();
+        
+            if (filter != null)
+            {{
+                var parameter = Expression.Parameter(typeof(T), ""x"");
+                Expression? combined = null;
+        
+                foreach (var property in typeof(T).GetProperties())
+                {{
+                    var value = property.GetValue(filter);
+                    var member = Expression.Property(parameter, property);
+                    var constant = Expression.Constant(value, property.PropertyType);
+        
+                    // Build: (value == null || x.Property == value)
+                    var isNullCheck = Expression.Equal(constant, Expression.Constant(null, property.PropertyType));
+                    var equalsCheck = Expression.Equal(member, constant);
+                    var condition = Expression.OrElse(isNullCheck, equalsCheck);
+        
+                    combined = combined == null ? condition : Expression.AndAlso(combined, condition);
+                }}
+        
+                if (combined != null)
+                {{
+                    var lambda = Expression.Lambda<Func<T, bool>>(combined, parameter);
+                    query = query.Where(lambda);
+                }}
+            }}
+        
+            return await query.ToListAsync();
         }}
 
         public virtual async Task<T?> GetByIdAsync(int id)
@@ -471,7 +534,7 @@ namespace {FolderNames.Repositories.ToString()}
             return await _context.Set<T>().FindAsync(id);
         }}
 
-        public virtual async Task<T> UpdateAsync(T entity)
+        public virtual async Task<T?> UpdateAsync(T entity)
         {{
             var keyValue = GetKeyValueAsInt(entity);
             var retrievedEntity = await GetByIdAsync(keyValue.Value);
@@ -480,7 +543,7 @@ namespace {FolderNames.Repositories.ToString()}
             return updateData;
         }}
 
-        public virtual async Task<T> DeleteByIdAsync(int id)
+        public virtual async Task<T?> DeleteByIdAsync(int id)
         {{
             T? deletedData = await GetByIdAsync(id);
             _context.Set<T>().Remove(deletedData);

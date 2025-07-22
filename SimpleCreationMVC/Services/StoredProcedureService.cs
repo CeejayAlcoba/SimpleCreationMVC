@@ -110,13 +110,32 @@ AS
         }
         private string CreateProcedureGetAllFile(TableSchema tableSchema, List<string> currentProcedures)
         {
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAll.ToString()}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAll}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
+
+            var primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
+            var filteredColumns = tableSchema.Columns.Where(c => c.COLUMN_NAME != primaryKey.COLUMN_NAME).ToList();
+
+            string parameters = _sqlService.GetColumnParameterSP(filteredColumns);
+
+            var allColumnsForFilter = new List<Column>();
+            allColumnsForFilter.AddRange(tableSchema.Columns);
+
+            var whereConditions = allColumnsForFilter
+                .Select(c => $"(@{c.COLUMN_NAME} IS NULL OR {c.COLUMN_NAME} = @{c.COLUMN_NAME})");
+
+            string whereClause = string.Join($" AND \n\t", whereConditions);
 
             StringBuilder text = new StringBuilder($@"
 {alterOrCreate} PROCEDURE {procedureName}
+    @{primaryKey.COLUMN_NAME} {primaryKey.DATA_TYPE} = NULL,
+{parameters}
 AS
-    SELECT * FROM {tableSchema.TABLE_NAME}
+BEGIN
+    SELECT *
+    FROM {tableSchema.TABLE_NAME}
+    WHERE {whereClause}
+END
 GO
 ");
 
@@ -124,6 +143,7 @@ GO
 
             return text.ToString();
         }
+
         private string CreateProcedureDeleteByIdFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.DeleteById.ToString()}";

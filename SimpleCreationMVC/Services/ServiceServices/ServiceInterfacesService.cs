@@ -17,7 +17,7 @@ namespace {FolderNames.Services}.{FolderNames.Interfaces}
     {{
         Task<{tableName}?> InsertAsync({tableName} data);
         Task<{tableName}?> UpdateAsync({tableName} data);
-        Task<IEnumerable<{tableName}>> GetAllAsync();
+        Task<IEnumerable<{tableName}>> GetAllAsync({tableName}? filter);
         Task<{tableName}?> GetByIdAsync(int id);
         Task<{tableName}?> DeleteByIdAsync(int id);
         Task<IEnumerable<{tableName}>> BulkInsertAsync(List<{tableName}> data);

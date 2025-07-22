@@ -45,11 +45,11 @@ namespace ApiControllers
         }}
 
         [HttpGet(""list"")]
-        public async Task<IActionResult> GetAllAsync()
+        public async Task<IActionResult> GetAllAsync([FromQuery]{table} filter)
         {{
             try
             {{
-                IEnumerable<{table}> data = await {serviceName}.GetAllAsync();
+                IEnumerable<{table}> data = await {serviceName}.GetAllAsync(filter);
                 return Ok(data);
             }}
             catch (Exception ex)

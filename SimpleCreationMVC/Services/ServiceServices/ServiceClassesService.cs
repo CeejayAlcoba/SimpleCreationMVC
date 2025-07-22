@@ -40,9 +40,9 @@ namespace {FolderNames.Services}.{FolderNames.Classes}
             return await {repositoryName}.UpdateAsync(data);
         }}
 
-        public async Task<IEnumerable<{tableName}>> GetAllAsync()
+        public async Task<IEnumerable<{tableName}>> GetAllAsync({tableName}? filter)
         {{
-            return await {repositoryName}.GetAllAsync();
+            return await {repositoryName}.GetAllAsync(filter);
         }}
 
         public async Task<{tableName}?> GetByIdAsync(int id)

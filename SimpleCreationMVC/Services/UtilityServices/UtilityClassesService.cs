@@ -16,34 +16,30 @@ namespace {FolderNames.Utilities}.{FolderNames.Classes}
 {{
     public class AutoMapperUtility : IAutoMapperUtility
     {{
-        public TDestination Map<TDestination>(object source)
+         public TDestination Map<TSource,TDestination>(TSource source)
         {{
             var config = new MapperConfiguration(cfg =>
             {{
-                // Dynamically create the map based on the source and destination types
-                cfg.CreateMap(source.GetType(), typeof(TDestination));
+                cfg.CreateMap(typeof(TSource), typeof(TDestination));
             }});
             var mapper = new Mapper(config);
-            return mapper.Map<TDestination>(source);
+            return mapper.Map<TSource,TDestination>(source);
         }}
 
-        public List<TDestination> MapList<TDestination>(IEnumerable<object> source)
+        public List<TDestination> MapList<TSource, TDestination>(IEnumerable<TSource> source)
         {{
             if (source == null || !source.Any())
             {{
                 return new List<TDestination>();
             }}
-            var sourceType = source.First().GetType();
 
             var config = new MapperConfiguration(cfg =>
             {{
-                // Dynamically create the map based on the source and destination types
-                cfg.CreateMap(sourceType, typeof(TDestination));
+                cfg.CreateMap(typeof(TSource), typeof(TDestination));
             }});
             var mapper = new Mapper(config);
 
-            // Perform mapping
-            return mapper.Map<List<TDestination>>(source);
+            return mapper.Map<IEnumerable<TSource>,List<TDestination>>(source);
         }}
     }}
 }}

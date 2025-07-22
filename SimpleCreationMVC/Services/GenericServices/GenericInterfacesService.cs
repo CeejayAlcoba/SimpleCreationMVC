@@ -18,7 +18,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
         where T : class
         where TProcedures : struct, Enum
     {{
-        Task<IEnumerable<T>> GetAllAsync();
+        Task<IEnumerable<T>> GetAllAsync(T? filter);
         Task<T?> GetByIdAsync(int id);
         Task<T?> InsertAsync(T entity);
         Task<T?> UpdateAsync(T entity);
@@ -43,7 +43,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
     public interface IGenericRepository<T>
         where T : class
     {{
-        Task<IEnumerable<T>> GetAllAsync();
+        Task<IEnumerable<T>> GetAllAsync(T? filter);
         Task<T?> GetByIdAsync(int id);
         Task<T?> InsertAsync(T entity);
         Task<T?> UpdateAsync(T entity);
@@ -62,13 +62,14 @@ namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
             string text = $@"
 using System.Data;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
 {{
     public interface IGenericRepository<T>
         where T : class
     {{
-        Task<IEnumerable<T>> GetAllAsync();
+        Task<IEnumerable<T>> GetAllAsync(T? filter);
         Task<T?> GetByIdAsync(int id);
         Task<T?> InsertAsync(T entity);
         Task<T?> UpdateAsync(T entity);
