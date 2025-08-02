@@ -25,7 +25,7 @@ namespace {FolderNames.Services}.{FolderNames.Classes}
     {{
         private readonly I{repository} {repositoryName};
 
-        public TasktblService(I{repository} {repositoryCamel})
+        public {serviceName}(I{repository} {repositoryCamel})
         {{
             {repositoryName} = {repositoryCamel};
         }}
