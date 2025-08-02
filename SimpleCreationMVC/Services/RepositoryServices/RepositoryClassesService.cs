@@ -16,9 +16,9 @@ namespace SimpleCreationMVC.Services.RepositoryServices
                 var storedProcedures = _sqlService.GetStoredProceduresByTable(tableName);
                 var keyValueList = new List<string>();
 
-                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.GetAll}"))
+                if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.GetAllByFilters}"))
                 {
-                    keyValueList.Add($"{ProcedureTypes.GetAll} = {tableName}Procedures.{tableName}_{ProcedureTypes.GetAll}");
+                    keyValueList.Add($"{ProcedureTypes.GetAllByFilters} = {tableName}Procedures.{tableName}_{ProcedureTypes.GetAllByFilters}");
                 }
                 if (storedProcedures.Contains($"{tableName}_{ProcedureTypes.GetById}"))
                 {

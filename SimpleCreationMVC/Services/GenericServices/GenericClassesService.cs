@@ -29,7 +29,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
     public class GenericProcedure<TProcedures>
     {{
-        public TProcedures? {ProcedureTypes.GetAll} {{ get; set; }} 
+        public TProcedures? {ProcedureTypes.GetAllByFilters} {{ get; set; }} 
         public TProcedures? {ProcedureTypes.GetById} {{ get; set; }}
         public TProcedures? {ProcedureTypes.Insert} {{ get; set; }}
         public TProcedures? {ProcedureTypes.Update} {{ get; set; }}
@@ -66,7 +66,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
         {{
-            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAll});
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAllByFilters});
             return await _connection.QueryAsync<T>(proc, filter, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
