@@ -110,7 +110,7 @@ AS
         }
         private string CreateProcedureGetAllFile(TableSchema tableSchema, List<string> currentProcedures)
         {
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAll}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAllByFilters}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
 
             var primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
