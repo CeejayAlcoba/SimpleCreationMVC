@@ -696,7 +696,7 @@ namespace {FolderNames.Repositories.ToString()}
 
     }}
 }}";
-            _fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
+            _fileService.Create(FolderPaths.RepositoriesClassesFolder, "GenericRepository.cs", text);
         }
     }
 }
