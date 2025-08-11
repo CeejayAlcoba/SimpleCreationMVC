@@ -6,7 +6,8 @@ namespace SimpleCreationMVC.Services.UtilityServices
     public class UtilityInterfacesService
     {
         public FileService _fileService = new FileService();
-        public  void CreateAppUtility()
+
+        public void CreateAppUtility()
         {
             string text = $@"
 namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
@@ -49,6 +50,51 @@ namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
 }}
 ";
             _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IDataTableUtility.cs", text);
+        }
+
+        public void CreateClaimsHelperUtility()
+        {
+            string text = $@"
+namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
+{{
+    public interface IClaimsHelperUtility
+    {{
+        int? GetUserId();
+    }}
+}}
+";
+            _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IClaimsHelperUtility.cs", text);
+        }
+
+        public void CreateEncryptUtility()
+        {
+            string text = $@"
+namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
+{{
+    public interface IEncryptUtility
+    {{
+        string GenerateRandomSalt();
+        string GenerateHashedPassword(string password, string salt);
+    }}
+}}
+";
+            _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IEncryptUtility.cs", text);
+        }
+
+        public void CreateJwtUtility()
+        {
+            string text = $@"
+using {FolderNames.Models};
+
+namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
+{{
+    public interface IJwtUtility
+    {{
+        string GenerateToken(int userId);
+    }}
+}}
+";
+            _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IJwtUtility.cs", text);
         }
     }
 }
