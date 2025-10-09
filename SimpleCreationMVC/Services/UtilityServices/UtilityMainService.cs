@@ -14,10 +14,16 @@ namespace SimpleCreationMVC.Services.UtilityServices
             _utilityInterfacesService.CreateAppUtility();
             _utilityInterfacesService.CreateAutoMapperUtility();
             _utilityInterfacesService.CreateDataTableUtility();
+            _utilityInterfacesService.CreateClaimsHelperUtility();
+            _utilityInterfacesService.CreateJwtUtility();
+            _utilityInterfacesService.CreateEncryptUtility();
 
             _utilityClassesService.CreateAppUtility();
             _utilityClassesService.CreateAutoMapperUtility();
             _utilityClassesService.CreateDataTableUtility();
+            _utilityClassesService.CreateClaimsHelperUtility();
+            _utilityClassesService.CreateJwtUtility();
+            _utilityClassesService.CreateEncryptUtility();
 
             CreateRegistration();
         }
@@ -40,6 +46,9 @@ namespace {FolderNames.Utilities}
             services.AddScoped<IAppUtility, AppUtility>();
             services.AddScoped<IAutoMapperUtility, AutoMapperUtility>();
             services.AddScoped<IDataTableUtility, DataTableUtility>();
+            services.AddScoped<IClaimsHelperUtility, ClaimsHelperUtility>();
+            services.AddScoped<IEncryptUtility, EncryptUtility>();
+            services.AddScoped<IJwtUtility, JwtUtility>();
         }}
     }}
 }}

@@ -212,7 +212,7 @@ using Microsoft.Data.SqlClient;
 using {FolderNames.Utilities}.{FolderNames.Classes};
 using {FolderNames.Repositories}.{FolderNames.Interfaces};
 
-namespace {FolderNames.Repositories.ToString()}
+namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {{
@@ -547,7 +547,7 @@ using System.Linq.Expressions;
 using {FolderNames.Utilities}.{FolderNames.Classes};
 using {FolderNames.Repositories}.{FolderNames.Interfaces};
 
-namespace {FolderNames.Repositories.ToString()}
+namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {{
@@ -760,7 +760,7 @@ namespace {FolderNames.Repositories.ToString()}
 
     }}
 }}";
-            _fileService.Create(FolderNames.Repositories.ToString(), "GenericRepository.cs", text);
+            _fileService.Create(FolderPaths.RepositoriesClassesFolder, "GenericRepository.cs", text);
         }
     }
 }
