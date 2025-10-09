@@ -99,7 +99,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> data)
         {{
-            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkInsert});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
@@ -108,7 +107,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> data)
         {{
-            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkUpdate});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
@@ -147,7 +145,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public virtual async Task<IEnumerable<T>> BulkMergeAsync(List<T> data, object? filtersParams = null)
         {{
-            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
             DynamicParameters deleteParameters = BuildParametersWithTVP(data, filtersParams);
             await BulkDeleteNotInTVPAsync(data,filtersParams);
             IEnumerable<T> result = await BulkUpsertAsync(data);
@@ -157,7 +154,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         private async Task<IEnumerable<T>> BulkDeleteNotInTVPAsync(List<T> data, object? filtersParams = null)
         {{
-            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkDeleteNotInTVP});
             DynamicParameters parameters = BuildParametersWithTVP(data, filtersParams);
             var tableName = typeof(T).Name;

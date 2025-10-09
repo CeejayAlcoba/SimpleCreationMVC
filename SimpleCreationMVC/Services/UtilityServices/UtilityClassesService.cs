@@ -60,28 +60,28 @@ namespace {FolderNames.Utilities}.{FolderNames.Classes}
     {{
         public DataTable Convert<T>(IEnumerable<T> lists) where T : class
         {{
-            if (lists == null || !lists.Any())
-                throw new ArgumentException(""The list cannot be null or empty."");
-
             DataTable dt = new DataTable(typeof(T).Name);
             PropertyInfo[] properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-            // Add columns to DataTable
+            // Add columns (even if list is null or empty)
             foreach (PropertyInfo property in properties)
             {{
                 Type columnType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
                 dt.Columns.Add(property.Name, columnType);
             }}
 
-            // Add rows to DataTable
-            foreach (T item in lists)
+            // Only add rows if the list is not null or empty
+            if (lists != null)
             {{
-                DataRow row = dt.NewRow();
-                foreach (PropertyInfo property in properties)
+                foreach (T item in lists)
                 {{
-                    row[property.Name] = property.GetValue(item) ?? DBNull.Value;
+                    DataRow row = dt.NewRow();
+                    foreach (PropertyInfo property in properties)
+                    {{
+                        row[property.Name] = property.GetValue(item) ?? DBNull.Value;
+                    }}
+                    dt.Rows.Add(row);
                 }}
-                dt.Rows.Add(row);
             }}
 
             return dt;
