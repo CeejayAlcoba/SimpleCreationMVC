@@ -5,11 +5,12 @@
         Insert,
         Update, 
         DeleteById,
-        GetAll,
+        GetAllByFilters,
         GetById,
         BulkInsert,
         BulkUpdate,
-        BulkUpsert,
-        BulkMerge,
+        BulkDeleteNotInTVP,
+        //BulkUpsert,
+        //BulkMerge,
     }
 }

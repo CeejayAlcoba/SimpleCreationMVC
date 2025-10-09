@@ -29,15 +29,14 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
     public class GenericProcedure<TProcedures>
     {{
-        public TProcedures? {ProcedureTypes.GetAll} {{ get; set; }} 
+        public TProcedures? {ProcedureTypes.GetAllByFilters} {{ get; set; }} 
         public TProcedures? {ProcedureTypes.GetById} {{ get; set; }}
         public TProcedures? {ProcedureTypes.Insert} {{ get; set; }}
         public TProcedures? {ProcedureTypes.Update} {{ get; set; }}
         public TProcedures? {ProcedureTypes.DeleteById} {{ get; set; }}
         public TProcedures? {ProcedureTypes.BulkInsert} {{ get; set; }}
         public TProcedures? {ProcedureTypes.BulkUpdate} {{ get; set; }}
-        public TProcedures? {ProcedureTypes.BulkUpsert} {{ get; set; }}
-        public TProcedures? {ProcedureTypes.BulkMerge} {{ get; set; }}
+        public TProcedures? {ProcedureTypes.BulkDeleteNotInTVP} {{ get; set; }}
     }}
 
     public class GenericRepository<T, TProcedures> : IGenericRepository<T, TProcedures>
@@ -66,7 +65,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
         {{
-            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAll});
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAllByFilters});
             return await _connection.QueryAsync<T>(proc, filter, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
@@ -114,22 +113,87 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<IEnumerable<T>> BulkUpsertAsync(List<T> data)
+
+        public async Task<IEnumerable<T>> BulkUpsertAsync(List<T> items)
         {{
-            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
-            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkUpsert});
-            var dt = _dataTableUtility.Convert<T>(data);
-            var tableName = typeof(T).Name;
-            return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+            var keyProperty = GetKeyProperty<T>();
+        
+            var insertList = items
+                .Where(x => IsKeyDefaultValue(keyProperty.GetValue(x)))
+                .ToList();
+        
+            var updateList = items
+                .Where(x => !IsKeyDefaultValue(keyProperty.GetValue(x)))
+                .ToList();
+        
+            var inserted = new List<T>();
+            var updated = new List<T>();
+        
+            if (insertList.Any())
+            {{
+                var newInserted = await BulkInsertAsync(insertList);
+                inserted = newInserted.ToList();
+            }}
+        
+            if (updateList.Any())
+            {{
+                var newUpdated = await BulkUpdateAsync(updateList);
+                updated = newUpdated.ToList();
+            }}
+        
+            return inserted.Concat(updated);
         }}
 
-        public async Task<IEnumerable<T>> BulkMergeAsync(List<T> data)
+        public async Task<IEnumerable<T>> BulkMergeAsync(List<T> data, object? filtersParams = null)
         {{
             if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
-            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkMerge});
+            DynamicParameters deleteParameters = BuildParametersWithTVP(data, additionalParams);
+            await BulkDeleteNotInTVPAsync(data,filtersParams);
+            await BulkUpsertAsync(data);
+            var tableName = typeof(T).Name;
+            return data;
+        }}
+
+        private async Task<IEnumerable<T>> BulkDeleteNotInTVPAsync(List<T> data, object? filtersParams = null)
+        {{
+            if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
+            var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkDeleteNotInTVP});
+            DynamicParameters parameters = BuildParametersWithTVP(data, filtersParams);
+            var tableName = typeof(T).Name;
+            return await _connection.QueryAsync<T>(proc, parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        }}
+
+        private DynamicParameters BuildParametersWithTVP<T>(List<T> data, object? additionalParams = null)
+        {{
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
-            return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
+        
+            var parameters = new DynamicParameters();
+            parameters.Add(""TVP"", dt.AsTableValuedParameter($""TVP_{{tableName}}""));
+        
+            if (additionalParams != null)
+            {{
+                foreach (var prop in additionalParams.GetType().GetProperties())
+                {{
+                    parameters.Add(prop.Name, prop.GetValue(additionalParams));
+                }}
+            }}
+        
+            return parameters;
+        }} 
+
+        private static PropertyInfo GetKeyProperty<T>()
+        {{
+            var keyProperty = typeof(T)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
+        
+            if (keyProperty == null)
+                throw new InvalidOperationException(
+                    $""Type '{{typeof(T).Name}}' does not contain a property marked with [Key].""
+                );
+        
+            return keyProperty;
         }}
     }}
 }}";

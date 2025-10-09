@@ -47,12 +47,14 @@ namespace SimpleCreation.Services
 
                 string strBulkUpdate = CreateProcedureBulkUpdateFile(tableSchema, currentProcedures);
                 queries.AppendLine(strBulkUpdate);
+                string strBulkDeleteNotInTVP = CreateProcedureBulkDeleteNotInTVPFile(tableSchema, currentProcedures);
+                queries.AppendLine(strBulkUpdate);
 
-                string strBulkUpsert = CreateProcedureBulkUpsertFile(tableSchema, currentProcedures);
-                queries.AppendLine(strBulkUpsert);
+                //string strBulkUpsert = CreateProcedureBulkUpsertFile(tableSchema, currentProcedures);
+                //queries.AppendLine(strBulkUpsert);
 
-                string strBulkMerge = CreateProcedureBulkMergeFile(tableSchema, currentProcedures);
-                queries.AppendLine(strBulkMerge);
+                //string strBulkMerge = CreateProcedureBulkMergeFile(tableSchema, currentProcedures);
+                //queries.AppendLine(strBulkMerge);
 
             }
             _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"All.sql", queries.ToString());
@@ -110,7 +112,7 @@ AS
         }
         private string CreateProcedureGetAllFile(TableSchema tableSchema, List<string> currentProcedures)
         {
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAll}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.GetAllByFilters}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
 
             var primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
@@ -156,7 +158,6 @@ GO
 AS
     
     DELETE FROM {tableSchema.TABLE_NAME}
-    OUTPUT deleted.*
     WHERE {primaryKey} =  @Id
 GO
             ");
@@ -260,13 +261,19 @@ namespace {FolderNames.ProcedureEnums}
 {alterOrCreate} PROCEDURE {procedureName}
     @TVP {tvpName} READONLY
 AS
+    CREATE TABLE #Inserted (Id INT);
+
    INSERT INTO {tableSchema.TABLE_NAME}(
 {string.Join($",\n", tableColumns)}
         )
-   OUTPUT INSERTED.*
+   OUTPUT INSERTED.{primaryKey.COLUMN_NAME} INTO #Inserted
    SELECT 
 {string.Join($",\n", tvpColumns)}
     FROM @TVP AS tvp
+
+    SELECT tbl.*
+    FROM {tableSchema.TABLE_NAME} tbl
+    INNER JOIN #Inserted i ON tbl.{primaryKey.COLUMN_NAME} = i.Id;
 GO
 ";
             _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
@@ -297,94 +304,118 @@ GO
             _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
             return content;
         }
-        public string CreateProcedureBulkUpsertFile(TableSchema tableSchema, List<string> currentProcedures)
+        public string CreateProcedureBulkDeleteNotInTVPFile(TableSchema tableSchema, List<string> currentProcedures)
         {
             string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkUpsert}";
+            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkDeleteNotInTVP}";
             string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
             Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
-
-            var nonPrimaryKeyColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).ToList();
-
-            string insertColumns = string.Join(", ", nonPrimaryKeyColumns.Select(c => c.COLUMN_NAME));
-            string insertSelect = string.Join(", ", nonPrimaryKeyColumns.Select(c => $"tvp.{c.COLUMN_NAME}"));
-
-            string updateSetStatements = string.Join(",\n\t\ttbl.", nonPrimaryKeyColumns.Select(c => $"{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}"));
+            string[] setQueries = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).Select(c => $"\t\ttbl.{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}").ToArray();
 
             string content = $@"
 {alterOrCreate} PROCEDURE {procedureName}
+    -- @FilterId INT,  -- change this filterId example (@EmployeeId)
     @TVP {tvpName} READONLY
 AS
-BEGIN
-    -- Insert rows where Id is NULL or 0
-    INSERT INTO {tableSchema.TABLE_NAME} ({insertColumns})
-    SELECT {insertSelect}
-    FROM @TVP AS tvp
-    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) = 0;
-
-    -- Update rows where Id matches
-    UPDATE tbl
-    SET tbl.{updateSetStatements}
+    DELETE
     FROM {tableSchema.TABLE_NAME} AS tbl
-    INNER JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
-    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) > 0;
-
-    SELECT * FROM @TVP
-END
+    WHERE 
+        tbl.{primaryKey.COLUMN_NAME} NOT IN (SELECT {primaryKey.COLUMN_NAME} FROM @TVP WHERE {primaryKey.COLUMN_NAME} IS NOT NULL)
+        --AND FilterId = @FilterId  -- change this example (EmployeeId = @EmployeeId)
+       
 GO
 ";
-
             _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
             return content;
         }
-        public string CreateProcedureBulkMergeFile(TableSchema tableSchema, List<string> currentProcedures)
-        {
-            string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
-            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkMerge}";
-            string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
-            Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
+//        public string CreateProcedureBulkUpsertFile(TableSchema tableSchema, List<string> currentProcedures)
+//        {
+//            string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
+//            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkUpsert}";
+//            string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
+//            Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
 
-            var nonPrimaryKeyColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).ToList();
+//            var nonPrimaryKeyColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).ToList();
 
-            string insertColumns = string.Join(", ", nonPrimaryKeyColumns.Select(c => c.COLUMN_NAME));
-            string insertSelect = string.Join(", ", nonPrimaryKeyColumns.Select(c => $"tvp.{c.COLUMN_NAME}"));
+//            string insertColumns = string.Join(", ", nonPrimaryKeyColumns.Select(c => c.COLUMN_NAME));
+//            string insertSelect = string.Join(", ", nonPrimaryKeyColumns.Select(c => $"tvp.{c.COLUMN_NAME}"));
 
-            string updateSetStatements = string.Join(",\n\t\ttbl.", nonPrimaryKeyColumns.Select(c => $"{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}"));
+//            string updateSetStatements = string.Join(",\n\t\ttbl.", nonPrimaryKeyColumns.Select(c => $"{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}"));
 
-            string content = $@"
-{alterOrCreate} PROCEDURE {procedureName}
-    @TVP {tvpName} READONLY
-    --@ForeignIdFilter INT (this is example for filtering deletes)
-AS
-BEGIN
-    -- 1️ Update rows where Id matches
-    UPDATE tbl
-    SET tbl.{updateSetStatements}
-    FROM {tableSchema.TABLE_NAME} AS tbl
-    INNER JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
-    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) > 0;
+//            string content = $@"
+//{alterOrCreate} PROCEDURE {procedureName}
+//    @TVP {tvpName} READONLY
+//AS
+//BEGIN
+//    -- Insert rows where Id is NULL or 0
+//    INSERT INTO {tableSchema.TABLE_NAME} ({insertColumns})
+//    SELECT {insertSelect}
+//    FROM @TVP AS tvp
+//    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) = 0;
 
-    -- 2️ Delete rows in target that are NOT in TVP
-    DELETE tbl
-    FROM {tableSchema.TABLE_NAME} AS tbl
-    LEFT JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
-    WHERE tvp.{primaryKey.COLUMN_NAME} IS NULL;
-    --AND tbl.ForeignIdFilter = @ForeignIdFilter (please change this if necessary)
+//    -- Update rows where Id matches
+//    UPDATE tbl
+//    SET tbl.{updateSetStatements}
+//    FROM {tableSchema.TABLE_NAME} AS tbl
+//    INNER JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
+//    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) > 0;
 
-    -- 3️ Insert rows where Id is NULL or 0
-    INSERT INTO {tableSchema.TABLE_NAME} ({insertColumns})
-    SELECT {insertSelect}
-    FROM @TVP AS tvp
-    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) = 0;
+//    SELECT * FROM @TVP
+//END
+//GO
+//";
 
-    SELECT * FROM @TVP
-END
-GO
-";
+//            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
+//            return content;
+//        }
+//        public string CreateProcedureBulkMergeFile(TableSchema tableSchema, List<string> currentProcedures)
+//        {
+//            string tvpName = _tableValuedParameterService.GetTVPName(tableSchema.TABLE_NAME);
+//            string procedureName = $"{tableSchema.TABLE_NAME}_{ProcedureTypes.BulkMerge}";
+//            string alterOrCreate = AlterOrCreate(currentProcedures, procedureName);
+//            Column primaryKey = _sqlService.GetTablePrimaryKey(tableSchema.TABLE_NAME);
 
-            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
-            return content;
-        }
+//            var nonPrimaryKeyColumns = _sqlService.GetTableColumns(tableSchema.TABLE_NAME, false).ToList();
+
+//            string insertColumns = string.Join(", ", nonPrimaryKeyColumns.Select(c => c.COLUMN_NAME));
+//            string insertSelect = string.Join(", ", nonPrimaryKeyColumns.Select(c => $"tvp.{c.COLUMN_NAME}"));
+
+//            string updateSetStatements = string.Join(",\n\t\ttbl.", nonPrimaryKeyColumns.Select(c => $"{c.COLUMN_NAME} = tvp.{c.COLUMN_NAME}"));
+
+//            string content = $@"
+//{alterOrCreate} PROCEDURE {procedureName}
+//    @TVP {tvpName} READONLY
+//    --@ForeignIdFilter INT (this is example for filtering deletes)
+//AS
+//BEGIN
+//    -- 1️ Update rows where Id matches
+//    UPDATE tbl
+//    SET tbl.{updateSetStatements}
+//    FROM {tableSchema.TABLE_NAME} AS tbl
+//    INNER JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
+//    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) > 0;
+
+//    -- 2️ Delete rows in target that are NOT in TVP
+//    DELETE tbl
+//    FROM {tableSchema.TABLE_NAME} AS tbl
+//    LEFT JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
+//    WHERE tvp.{primaryKey.COLUMN_NAME} IS NULL;
+//    --AND tbl.ForeignIdFilter = @ForeignIdFilter (please change this if necessary)
+
+//    -- 3️ Insert rows where Id is NULL or 0
+//    INSERT INTO {tableSchema.TABLE_NAME} ({insertColumns})
+//    SELECT {insertSelect}
+//    FROM @TVP AS tvp
+//    WHERE ISNULL(tvp.{primaryKey.COLUMN_NAME}, 0) = 0;
+
+//    SELECT * FROM @TVP
+//END
+//GO
+//";
+
+//            _fileService.Create(FolderNames.ProcedureQueries.ToString(), $"{procedureName}.sql", content);
+//            return content;
+//        }
 
 
         private string AlterOrCreate(List<string> currentProcedures, string procedureName)

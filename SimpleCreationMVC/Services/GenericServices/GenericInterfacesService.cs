@@ -26,7 +26,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
         Task<IEnumerable<T>> BulkInsertAsync(List<T> data);
         Task<IEnumerable<T>> BulkUpdateAsync(List<T> data);
         Task<IEnumerable<T>> BulkUpsertAsync(List<T> data);
-        Task<IEnumerable<T>> BulkMergeAsync(List<T> data);
+        Task<IEnumerable<T>> BulkMergeAsync(List<T> data, object? filtersParams = null);
     }}
 }}
 ";
