@@ -47,8 +47,9 @@ namespace SimpleCreation.Services
 
                 string strBulkUpdate = CreateProcedureBulkUpdateFile(tableSchema, currentProcedures);
                 queries.AppendLine(strBulkUpdate);
+
                 string strBulkDeleteNotInTVP = CreateProcedureBulkDeleteNotInTVPFile(tableSchema, currentProcedures);
-                queries.AppendLine(strBulkUpdate);
+                queries.AppendLine(strBulkDeleteNotInTVP);
 
                 //string strBulkUpsert = CreateProcedureBulkUpsertFile(tableSchema, currentProcedures);
                 //queries.AppendLine(strBulkUpsert);
@@ -317,11 +318,11 @@ GO
     -- @FilterId INT,  -- change this filterId example (@EmployeeId)
     @TVP {tvpName} READONLY
 AS
-    DELETE
-    FROM {tableSchema.TABLE_NAME} AS tbl
-    WHERE 
-        tbl.{primaryKey.COLUMN_NAME} NOT IN (SELECT {primaryKey.COLUMN_NAME} FROM @TVP WHERE {primaryKey.COLUMN_NAME} IS NOT NULL)
-        --AND FilterId = @FilterId  -- change this example (EmployeeId = @EmployeeId)
+    DELETE tbl
+	FROM {tableSchema.TABLE_NAME} AS tbl
+	LEFT JOIN @TVP AS tvp ON tbl.{primaryKey.COLUMN_NAME} = tvp.{primaryKey.COLUMN_NAME}
+	WHERE tvp.{primaryKey.COLUMN_NAME} IS NULL
+     --AND FilterId = @FilterId  -- change this example (EmployeeId = @EmployeeId)
        
 GO
 ";

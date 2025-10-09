@@ -22,6 +22,8 @@ namespace SimpleCreationMVC.Services.GenericServices
 using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Reflection;
+using System.ComponentModel.DataAnnotations;
 using {FolderNames.Utilities}.{FolderNames.Classes};
 using {FolderNames.Repositories}.{FolderNames.Interfaces};
 
@@ -63,39 +65,39 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return procedure.ToString() ?? """";
         }}
 
-        public async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
+        public virtual async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
         {{
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetAllByFilters});
             return await _connection.QueryAsync<T>(proc, filter, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<T?> GetByIdAsync(int id)
+        public virtual async Task<T?> GetByIdAsync(int id)
         {{
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.GetById});
             return await _connection.QueryFirstOrDefaultAsync<T>(proc, new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<T?> InsertAsync(T entity)
+        public virtual async Task<T?> InsertAsync(T entity)
         {{
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.Insert});
             return await _connection.QueryFirstOrDefaultAsync<T>(proc, entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<T?> UpdateAsync(T entity)
+        public virtual async Task<T?> UpdateAsync(T entity)
         {{
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.Update});
             return await _connection.QueryFirstOrDefaultAsync<T>(proc, entity, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<T?> DeleteByIdAsync(int id)
+        public virtual async Task<T?> DeleteByIdAsync(int id)
         {{
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.DeleteById});
             return await _connection.QueryFirstOrDefaultAsync<T>(proc, new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<IEnumerable<T>> BulkInsertAsync(List<T> data)
+        public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> data)
         {{
             if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkInsert});
@@ -104,7 +106,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public async Task<IEnumerable<T>> BulkUpdateAsync(List<T> data)
+        public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> data)
         {{
             if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkUpdate});
@@ -113,8 +115,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-
-        public async Task<IEnumerable<T>> BulkUpsertAsync(List<T> items)
+        public virtual async Task<IEnumerable<T>> BulkUpsertAsync(List<T> items)
         {{
             var keyProperty = GetKeyProperty<T>();
         
@@ -141,17 +142,17 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                 updated = newUpdated.ToList();
             }}
         
-            return inserted.Concat(updated);
+            return updated.Concat(inserted);
         }}
 
-        public async Task<IEnumerable<T>> BulkMergeAsync(List<T> data, object? filtersParams = null)
+        public virtual async Task<IEnumerable<T>> BulkMergeAsync(List<T> data, object? filtersParams = null)
         {{
             if (data == null || data.Count == 0) throw new ArgumentException(""Data list cannot be null or empty."", nameof(data));
-            DynamicParameters deleteParameters = BuildParametersWithTVP(data, additionalParams);
+            DynamicParameters deleteParameters = BuildParametersWithTVP(data, filtersParams);
             await BulkDeleteNotInTVPAsync(data,filtersParams);
-            await BulkUpsertAsync(data);
+            IEnumerable<T> result = await BulkUpsertAsync(data);
             var tableName = typeof(T).Name;
-            return data;
+            return result;
         }}
 
         private async Task<IEnumerable<T>> BulkDeleteNotInTVPAsync(List<T> data, object? filtersParams = null)
@@ -163,7 +164,21 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return await _connection.QueryAsync<T>(proc, parameters, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        private DynamicParameters BuildParametersWithTVP<T>(List<T> data, object? additionalParams = null)
+        private bool IsKeyDefaultValue(object? value)
+        {{
+            if (value == null)
+                return true;
+
+            var type = value.GetType();
+
+            if (Nullable.GetUnderlyingType(type) != null)
+                type = Nullable.GetUnderlyingType(type)!;
+
+            var defaultValue = type.IsValueType ? Activator.CreateInstance(type) : null;
+
+            return value.Equals(defaultValue);
+        }}
+        private DynamicParameters BuildParametersWithTVP(List<T> data, object? additionalParams = null)
         {{
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
