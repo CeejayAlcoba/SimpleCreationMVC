@@ -96,5 +96,27 @@ namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
 ";
             _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IJwtUtility.cs", text);
         }
+        public void CreateFileUtility()
+        {
+            string text = $@"
+using {FolderNames.Models};
+
+namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
+{{
+    public interface IFileUtility
+    {{
+        Task<string> CreateAsync(string fileName, Stream fileStream);
+        Task<string> UpdateAsync(string oldFileName, string newFileName, Stream newFileStream);
+        void Delete(string fileName);
+        bool Exists(string fileName);
+        Task<byte[]> GetAsync(string fileName);
+        string GetContentType(string fileName);
+    }}
+}}
+
+
+";
+            _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IFileUtility.cs", text);
+        }
     }
 }

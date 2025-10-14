@@ -8,6 +8,7 @@ namespace SimpleCreationMVC.Services.UtilityServices
 
         private readonly UtilityInterfacesService _utilityInterfacesService = new UtilityInterfacesService();
         private readonly UtilityClassesService _utilityClassesService = new UtilityClassesService();
+        private readonly UtilityReadMe _utilityReadMe = new UtilityReadMe();
         private readonly FileService _fileService = new FileService();
         public void Create()
         {
@@ -17,6 +18,7 @@ namespace SimpleCreationMVC.Services.UtilityServices
             _utilityInterfacesService.CreateClaimsHelperUtility();
             _utilityInterfacesService.CreateJwtUtility();
             _utilityInterfacesService.CreateEncryptUtility();
+            _utilityInterfacesService.CreateFileUtility();
 
             _utilityClassesService.CreateAppUtility();
             _utilityClassesService.CreateAutoMapperUtility();
@@ -24,6 +26,11 @@ namespace SimpleCreationMVC.Services.UtilityServices
             _utilityClassesService.CreateClaimsHelperUtility();
             _utilityClassesService.CreateJwtUtility();
             _utilityClassesService.CreateEncryptUtility();
+            _utilityClassesService.CreateFileUtility();
+
+            _utilityReadMe.CreateFileUtility();
+            _utilityReadMe.CreateJWTUtility();
+            _utilityReadMe.CreateAppUtility();
 
             CreateRegistration();
         }
@@ -49,6 +56,7 @@ namespace {FolderNames.Utilities}
             services.AddScoped<IClaimsHelperUtility, ClaimsHelperUtility>();
             services.AddScoped<IEncryptUtility, EncryptUtility>();
             services.AddScoped<IJwtUtility, JwtUtility>();
+            services.AddScoped<IFileUtility, FileUtility>();
         }}
     }}
 }}
