@@ -80,7 +80,7 @@ ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
 
                 if (!secondTableDict.ContainsKey(tableName))
                 {
-                    queries.AddRange(CreateTableSql(tableName, tableGroup));
+                    queries.Add(CreateTableSql(tableName, tableGroup));
                     continue;
                 }
 
@@ -99,7 +99,7 @@ ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
 
         #region Private Helpers
 
-        private IEnumerable<string> CreateTableSql(string tableName, IEnumerable<TableInfo> columns)
+        private string CreateTableSql(string tableName, IEnumerable<TableInfo> columns)
         {
             var columnDefs = columns.Select(c =>
             {
@@ -107,24 +107,31 @@ ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
                 var nullable = c.IsNullable ? "NULL" : "NOT NULL";
                 var def = !string.IsNullOrEmpty(c.ColumnDefault) ? $"DEFAULT {c.ColumnDefault}" : "";
                 var pk = c.IsPrimaryKey ? "PRIMARY KEY" : "";
-                return $"[{c.ColumnName}] {dataType} {nullable} {def} {pk}".Trim();
-            });
+                return $"    [{c.ColumnName}] {dataType} {nullable} {def} {pk}".Trim();
+            }).ToList();
 
-            var tableSql = new List<string>
-    {
-        @$"CREATE TABLE [{tableName}] (
-        {string.Join(",\n\t", columnDefs)}
-);"
-    };
+            var fkConstraints = columns
+                .Where(c => !string.IsNullOrEmpty(c.ReferencedTable) && !string.IsNullOrEmpty(c.ReferencedColumn))
+                .Select(c =>
+                {
+                    var fkName = !string.IsNullOrEmpty(c.ForeignKeyName)
+                        ? c.ForeignKeyName
+                        : $"FK_{tableName}_{c.ColumnName}";
+                    return
+        $"\t\tCONSTRAINT [{fkName}] FOREIGN KEY ([{c.ColumnName}]) REFERENCES [{c.ReferencedTable}]([{c.ReferencedColumn}])";
+                })
+                .ToList();
 
-            // Add FK constraints as separate ALTER TABLE statements
-            foreach (var col in columns.Where(c => !string.IsNullOrEmpty(c.ReferencedTable) && !string.IsNullOrEmpty(c.ReferencedColumn)))
-            {
-                tableSql.Add(AddColumnWithForeignKeySql(tableName, col));
-            }
+            var allDefs = columnDefs.Concat(fkConstraints);
 
-            return tableSql;
+            var sql =
+        $@"CREATE TABLE [{tableName}] (
+        {string.Join(",\n\t", allDefs)}
+);";
+
+            return sql;
         }
+
 
         private IEnumerable<string> AddNewColumnsSql(string tableName, Dictionary<string, TableInfo> firstColumns, Dictionary<string, TableInfo> secondColumns)
         {
