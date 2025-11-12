@@ -223,6 +223,18 @@ ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
             return queries;
         }
 
+        private string NormalizeSql(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql))
+                return string.Empty;
+
+            sql = Regex.Replace(sql, @"\s+", " ");
+
+            sql = sql.Trim();
+
+            return sql;
+        }
+
         #endregion
 
         public IEnumerable<string> CompareStoredProcedures(
@@ -231,25 +243,28 @@ ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
         {
             var queries = new List<string>();
 
-            // Procedures missing in the second database (CREATE PROCEDURE)
+            //CREATE PROCEDURE
             var missingProcedures = firstProcedures.Keys.Except(secondProcedures.Keys);
             foreach (var procedure in missingProcedures)
             {
                 queries.Add($"{firstProcedures[procedure]} \nGO");
             }
 
-            // Procedures with the same name but different content (ALTER PROCEDURE)
+            //ALTER PROCEDURE
             var commonProcedures = firstProcedures.Keys.Intersect(secondProcedures.Keys);
             foreach (var procedure in commonProcedures)
             {
-                if (!string.Equals(firstProcedures[procedure], secondProcedures[procedure], StringComparison.OrdinalIgnoreCase))
+                var firstNormalized = NormalizeSql(firstProcedures[procedure]);
+                var secondNormalized = NormalizeSql(secondProcedures[procedure]);
+
+                if (!string.Equals(firstNormalized, secondNormalized, StringComparison.OrdinalIgnoreCase))
                 {
-                    var newProcedure = Regex.Replace(firstProcedures[procedure], @"\bCREATE \b", "ALTER ", RegexOptions.IgnoreCase);
+                    var newProcedure = Regex.Replace(firstProcedures[procedure], @"\bCREATE\s+PROCEDURE\b", "ALTER PROCEDURE", RegexOptions.IgnoreCase);
                     queries.Add($"{newProcedure} \nGO");
                 }
             }
 
-            // Procedures missing in the first database (DROP PROCEDURE)
+            //DROP PROCEDURE
             var extraProcedures = secondProcedures.Keys.Except(firstProcedures.Keys);
             foreach (var procedure in extraProcedures)
             {
