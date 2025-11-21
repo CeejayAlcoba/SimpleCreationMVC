@@ -58,7 +58,7 @@ namespace {FolderNames.Utilities}.{FolderNames.Classes}
 {{
     public class DataTableUtility : IDataTableUtility
     {{
-        public DataTable Convert<T>(IEnumerable<T> lists) where T : class
+        public DataTable Convert<T>(IEnumerable<T>? lists) where T : class
         {{
             DataTable dt = new DataTable(typeof(T).Name);
             PropertyInfo[] properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);

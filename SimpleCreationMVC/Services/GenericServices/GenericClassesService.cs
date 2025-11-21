@@ -97,24 +97,27 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return await _connection.QueryFirstOrDefaultAsync<T>(proc, new {{ Id = id }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> data)
+        public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T>? data)
         {{
+            data ??= new List<T>();
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkInsert});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
             return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> data)
+        public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T>? data)
         {{
+            data ??= new List<T>();
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkUpdate});
             var dt = _dataTableUtility.Convert<T>(data);
             var tableName = typeof(T).Name;
             return await _connection.QueryAsync<T>(proc, new {{ TVP = dt.AsTableValuedParameter($""TVP_{{tableName}}"") }}, commandType: CommandType.StoredProcedure, commandTimeout: _commandTimeout);
         }}
 
-        public virtual async Task<IEnumerable<T>> BulkUpsertAsync(List<T> items)
+        public virtual async Task<IEnumerable<T>> BulkUpsertAsync(List<T>? items)
         {{
+            items ??= new List<T>();
             var keyProperty = GetKeyProperty<T>();
         
             var insertList = items
@@ -145,6 +148,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public virtual async Task<IEnumerable<T>> BulkMergeAsync(List<T> data, object? filtersParams = null)
         {{
+            data ??= new List<T>();
             DynamicParameters deleteParameters = BuildParametersWithTVP(data, filtersParams);
             await BulkDeleteNotInTVPAsync(data,filtersParams);
             IEnumerable<T> result = await BulkUpsertAsync(data);
@@ -152,8 +156,9 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return result;
         }}
 
-        private async Task<IEnumerable<T>> BulkDeleteNotInTVPAsync(List<T> data, object? filtersParams = null)
+        private async Task<IEnumerable<T>> BulkDeleteNotInTVPAsync(List<T>? data, object? filtersParams = null)
         {{
+            data ??= new List<T>();
             var proc = EnsureProcedureName(_procedures.{ProcedureTypes.BulkDeleteNotInTVP});
             DynamicParameters parameters = BuildParametersWithTVP(data, filtersParams);
             var tableName = typeof(T).Name;
