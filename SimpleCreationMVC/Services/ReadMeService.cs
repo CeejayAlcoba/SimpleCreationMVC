@@ -53,10 +53,26 @@ PM> Install-Package Microsoft.Extensions.Configuration.Json
 PM> Install-Package Microsoft.Extensions.Configuration.Binder
 
 In Program.cs (Main project) add this 
-builder.Services.AddRepositories();
-builder.Services.AddServices();
-builder.Services.AddUtilities();
-builder.Services.AddHttpContextAccessor(); 
+    builder.Services.AddRepositories();
+    builder.Services.AddServices();
+    builder.Services.AddUtilities();
+    builder.Services.AddHttpContextAccessor(); 
+    builder.Services.AddUnitOfWork();
+    var connectionString = builder.Configuration.GetConnectionString(""DefaultConnection"");
+    builder.Services.AddDbContext<ApplicationContext>(options =>
+        options.UseSqlServer(
+            connectionString,
+            b => b.MigrationsAssembly(typeof(ApplicationContext).Assembly.FullName)
+        ));
+
+In appsettings.json
+    ""ConnectionStrings"": {
+        ""DefaultConnection"": ""<your connection string>"",
+    },
+
+Command
+    add-migration Initial
+    update-database
 "
             ;
 

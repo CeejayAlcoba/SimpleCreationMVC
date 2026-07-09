@@ -78,6 +78,26 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             fileService.Create(FolderPaths.RepositoriesClassesFolder, $"{tableName}Repository.cs", text);
         }
 
+        public void CreateEFCore(string tableName)
+        {
+            string text = $@"
+using {FolderNames.Models};
+using {FolderNames.Repositories}.{FolderNames.Interfaces};
+using {FolderNames.ApplicationContexts};
+
+namespace {FolderNames.Repositories}.{FolderNames.Classes}
+{{
+    public class {tableName}Repository : GenericRepository<{tableName}>, I{tableName}Repository
+    {{
+        public {tableName}Repository(ApplicationContext context):base(context)
+        {{
+        }}
+    }}
+}}
+";
+            fileService.Create(FolderPaths.RepositoriesClassesFolder, $"{tableName}Repository.cs", text);
+        }
+
 
         public void CreateCommon(string tableName)
         {

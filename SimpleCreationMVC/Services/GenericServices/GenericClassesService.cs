@@ -522,40 +522,37 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
         }
         public void CreateEFCoreContext()
         {
-            StringBuilder dbSetText = new StringBuilder();
+            var dbSetText = new StringBuilder();
             var tables = sqlService.GetAllTableSchema();
+
             foreach (var table in tables)
             {
-                dbSetText.AppendLine("\n\t\tpublic DbSet<" + table.TABLE_NAME + "> " + table.TABLE_NAME + " { get; set; }");
+                string cleanName = table.TABLE_NAME.Replace(" ", "");
+                dbSetText.AppendLine($"        public DbSet<{cleanName}> {cleanName} {{ get; set; }}");
             }
 
-            string text = $@"
-using Microsoft.EntityFrameworkCore;
+            string text = $@"using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using {FolderNames.Models.ToString()};
+using {FolderNames.Models};
 
-namespace {FolderNames.ApplicationContexts.ToString()}
+namespace {FolderNames.ApplicationContexts}
 {{
     public class ApplicationContext : DbContext
     {{
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options)
         {{
-            string connectionString = ""{modifiedConnectionString}"";
-            optionsBuilder.UseSqlServer(connectionString);
-            optionsBuilder.EnableSensitiveDataLogging();
-            base.OnConfiguring(optionsBuilder);
         }}
-{dbSetText}
+
+{dbSetText.ToString().TrimEnd()}
     }}
-}}
-";
+}}";
+
             _fileService.Create(FolderNames.ApplicationContexts.ToString(), "ApplicationContext.cs", text);
         }
         public void CreateEFCore()
         {
-            string text = $@"
-using Microsoft.EntityFrameworkCore;
-using {FolderNames.ApplicationContexts.ToString()};
+            string text = $@"using Microsoft.EntityFrameworkCore;
+using {FolderNames.ApplicationContexts};
 using System.ComponentModel.DataAnnotations;
 using EFCore.BulkExtensions;
 using System.Reflection;
@@ -567,7 +564,12 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {{
-        private readonly ApplicationContext _context = new ApplicationContext();
+        protected readonly ApplicationContext _context;
+
+        public GenericRepository(ApplicationContext context)
+        {{
+            _context = context;
+        }}
 
         public virtual async Task<T?> InsertAsync(T entity)
         {{
@@ -587,11 +589,13 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
         
                 foreach (var property in typeof(T).GetProperties())
                 {{
+                    // Skip navigation/class properties to avoid runtime evaluation errors
+                    if (property.PropertyType.IsClass && property.PropertyType != typeof(string)) continue;
+
                     var value = property.GetValue(filter);
                     var member = Expression.Property(parameter, property);
                     var constant = Expression.Constant(value, property.PropertyType);
         
-                    // Build: (value == null || x.Property == value)
                     var isNullCheck = Expression.Equal(constant, Expression.Constant(null, property.PropertyType));
                     var equalsCheck = Expression.Equal(member, constant);
                     var condition = Expression.OrElse(isNullCheck, equalsCheck);
@@ -616,65 +620,56 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         public virtual async Task<T?> UpdateAsync(T entity)
         {{
-            var keyValue = GetKeyValueAsInt(entity);
-            var retrievedEntity = await GetByIdAsync(keyValue.Value);
-            var updateData = UpdateEntityProperties(retrievedEntity, entity);
+            _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
-            return updateData;
+            return entity;
         }}
 
         public virtual async Task<T?> DeleteByIdAsync(int id)
         {{
             T? deletedData = await GetByIdAsync(id);
-            _context.Set<T>().Remove(deletedData);
-            await _context.SaveChangesAsync();
+            if (deletedData != null)
+            {{
+                _context.Set<T>().Remove(deletedData);
+                await _context.SaveChangesAsync();
+            }}
             return deletedData;
         }}
 
         public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> list)
         {{
+            if (list == null || !list.Any()) return list;
+
             await _context.BulkUpdateAsync(list);
-            await _context.SaveChangesAsync();
             return list;
         }}
 
         public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> list)
         {{
+            if (list == null || !list.Any()) return list;
+
             await _context.BulkInsertAsync(list);
-            await _context.SaveChangesAsync();
             return list;
         }}
 
         public virtual async Task<IEnumerable<T>> BulkUpsertAsync(List<T> entities)
         {{
-            var (entitiesToInsert, entitiesToUpdate) = SeparateEntities(entities);
+            if (entities == null || !entities.Any()) return entities;
 
-            // Bulk Insert
-            if (entitiesToInsert.Any())
-            {{
-                await _context.BulkInsertAsync(entitiesToInsert);
-            }}
-
-            // Bulk Update
-            if (entitiesToUpdate.Any())
-            {{
-                await _context.BulkUpdateAsync(entitiesToUpdate);
-            }}
-
-            await _context.SaveChangesAsync();
-
+            // Uses EFCore.BulkExtensions native BulkInsertOrUpdate out of the box
+            await _context.BulkInsertOrUpdateAsync(entities);
             return entities;
         }}
 
         public virtual async Task<IEnumerable<T>> BulkMergeAsync(List<T> entities, Expression<Func<T, bool>>? deleteFilter = null)
         {{
-            var keyProperty = GetKeyProperty();
+            string keyName = GetKeyPropertyName();
 
             var keepIds = entities
-                            .Select(x => keyProperty.GetValue(x))
-                            .Where(id => id != null && Convert.ToInt32(id) > 0)
-                            .Cast<int>()
-                            .ToList();
+                .Select(x => x.GetType().GetProperty(keyName)?.GetValue(x))
+                .Where(id => id != null && Convert.ToInt32(id) > 0)
+                .Cast<int>()
+                .ToList();
 
             IQueryable<T> query = _context.Set<T>();
 
@@ -683,16 +678,14 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                 query = query.Where(deleteFilter);
             }}
 
-            if (keepIds.Any())
-            {{
-                var entitiesToDelete = await query
-                    .Where(x => !keepIds.Contains(EF.Property<int>(x, keyProperty.Name)))
-                    .ToListAsync();
+            // Corrected Merge deletion condition
+            var entitiesToDelete = await query
+                .Where(x => !keepIds.Contains(EF.Property<int>(x, keyName)))
+                .ToListAsync();
 
-                if (entitiesToDelete.Any())
-                {{
-                    await _context.BulkDeleteAsync(entitiesToDelete);
-                }}
+            if (entitiesToDelete.Any())
+            {{
+                await _context.BulkDeleteAsync(entitiesToDelete);
             }}
 
             await BulkUpsertAsync(entities);
@@ -700,80 +693,18 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return entities;
         }}
 
-        private PropertyInfo GetKeyProperty()
+        private string GetKeyPropertyName()
         {{
-            var keyProperty = typeof(T).GetProperties()
-                                .FirstOrDefault(p => p.GetCustomAttributes(typeof(KeyAttribute), true).Any());
+            // Pulls the actual mapped key name directly from EF core metadata maps
+            var entityType = _context.Model.FindEntityType(typeof(T));
+            var primaryKey = entityType?.FindPrimaryKey();
+            var keyProperty = primaryKey?.Properties.FirstOrDefault();
 
             if (keyProperty == null)
-                throw new InvalidOperationException($""No key property found for entity type {{typeof(T).Name}}"");
+                throw new InvalidOperationException($""No Primary Key metadata mapped for entity type {{typeof(T).Name}}"");
 
-            return keyProperty;
+            return keyProperty.Name;
         }}
-
-        private (List<T> entitiesToInsert, List<T> entitiesToUpdate) SeparateEntities(List<T> entities)
-        {{
-            var entitiesToInsert = new List<T>();
-            var entitiesToUpdate = new List<T>();
-
-            var keyProperty = GetKeyProperty();
-
-            foreach (var entity in entities)
-            {{
-                var keyValue = keyProperty.GetValue(entity);
-                bool isDefaultKey = keyValue == null ||
-                                   (keyValue is int intValue && intValue == 0) ||
-                                   (keyValue is long longValue && longValue == 0);
-
-                if (isDefaultKey)
-                {{
-                    entitiesToInsert.Add(entity);
-                }}
-                else
-                {{
-                    entitiesToUpdate.Add(entity);
-                }}
-            }}
-            return (entitiesToInsert, entitiesToUpdate);
-        }}
-
-        private int? GetKeyValueAsInt(T entity)
-        {{
-            var entityType = typeof(T);
-            var keyProperty = GetKeyProperty();
-
-            if (keyProperty == null)
-            {{
-                throw new InvalidOperationException(""No Key attribute found on properties."");
-            }}
-
-            var keyValue = keyProperty.GetValue(entity);
-
-            if (keyValue is int intValue)
-            {{
-                return intValue;
-            }}
-
-            throw new InvalidOperationException(""Key value is not of type int."");
-        }}
-
-
-        private T UpdateEntityProperties(T oldEntity, T newEntity)
-        {{
-            var entityType = typeof(T);
-
-            foreach (var property in entityType.GetProperties())
-            {{
-                if (property.CanWrite && !Attribute.IsDefined(property, typeof(KeyAttribute)))
-                {{
-                    var newValue = property.GetValue(newEntity);
-                    property.SetValue(oldEntity, newValue);
-                }}
-            }}
-            return newEntity;
-
-        }}
-
     }}
 }}";
             _fileService.Create(FolderPaths.RepositoriesClassesFolder, "GenericRepository.cs", text);

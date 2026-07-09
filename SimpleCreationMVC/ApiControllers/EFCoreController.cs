@@ -6,6 +6,7 @@ using SimpleCreationMVC.Services;
 using SimpleCreationMVC.Services.GenericServices;
 using SimpleCreationMVC.Services.RepositoryServices;
 using SimpleCreationMVC.Services.ServiceServices;
+using SimpleCreationMVC.Services.UnitOfWorkServices;
 using SimpleCreationMVC.Services.UtilityServices;
 
 namespace SimpleCreation.ApiControllers
@@ -26,14 +27,17 @@ namespace SimpleCreation.ApiControllers
                 ControllerService _controllerService = new ControllerService(connectionString);
                 ReadMeService _readMeService = new ReadMeService();
                 UtilityMainService _utilityMainService = new UtilityMainService();
+                UnitOfWorkMainService _unitOfWorkMainService = new UnitOfWorkMainService();
 
                 _fileService.Delete();
                 _genericMainService.CreateEFCore();
                 _modelService.CreateModelClassesFiles(tableSchemas);
-                _repositoryMainService.CreateCommon(tableSchemas);
+                _repositoryMainService.CreateEFCore(tableSchemas);
                 _serviceMainService.CreateCommon(tableSchemas);
+                _unitOfWorkMainService.CreateCommon(tableSchemas);
                 _controllerService.CreateWebApisControllerFiles(tableSchemas);
                 _utilityMainService.Create();
+                
                 _readMeService.CreateEFCoreNote();
 
                 return Ok();

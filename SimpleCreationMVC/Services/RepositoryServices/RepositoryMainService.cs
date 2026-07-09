@@ -27,6 +27,20 @@ namespace SimpleCreationMVC.Services.RepositoryServices
             CreateStoredProcedureRegistration(tableSchemas);
 
         }
+
+        public void CreateEFCore(List<TableSchema> tableSchemas)
+        {
+            foreach (var tableSchema in tableSchemas)
+            {
+                if (tableSchema.isRepositoryFileAllowed == false) continue;
+
+                string tableName = tableSchema.TABLE_NAME;
+                _repositoryClassesService.CreateEFCore(tableName);
+                _repositoryInterfacesService.CreateCommon(tableSchemas);
+            }
+            CreateCommonRegistration(tableSchemas);
+
+        }
         public void CreateCommon(List<TableSchema> tableSchemas)
         {
             foreach (var tableSchema in tableSchemas)
