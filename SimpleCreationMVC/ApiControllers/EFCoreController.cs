@@ -32,10 +32,11 @@ namespace SimpleCreation.ApiControllers
                 _fileService.Delete();
                 _genericMainService.CreateEFCore();
                 _modelService.CreateModelClassesFiles(tableSchemas);
+                _modelService.CreatePagedResultModel();
                 _repositoryMainService.CreateEFCore(tableSchemas);
-                _serviceMainService.CreateCommon(tableSchemas);
+                _serviceMainService.CreateEFCore(tableSchemas);
                 _unitOfWorkMainService.CreateCommon(tableSchemas);
-                _controllerService.CreateWebApisControllerFiles(tableSchemas);
+                _controllerService.CreateEFCoreWebApisControllerFiles(tableSchemas);
                 _utilityMainService.Create();
                 
                 _readMeService.CreateEFCoreNote();

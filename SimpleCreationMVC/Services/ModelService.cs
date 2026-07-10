@@ -74,5 +74,25 @@ namespace {FolderNames.Models.ToString()}
 ";
             fileService.Create(FolderNames.Models.ToString(), $"{model.Name}.cs", text);
         }
+
+        public void CreatePagedResultModel()
+        {
+            string text = $@"using System.Collections.Generic;
+
+namespace {FolderNames.Models}.{FolderNames.Pagination}
+{{
+    public class PagedResult<T>
+    {{
+        public IEnumerable<T> Items {{ get; set; }} = new List<T>();
+        public int CurrentPage {{ get; set; }}
+        public int TotalPages {{ get; set; }}
+        public int PageSize {{ get; set; }}
+        public int TotalCount {{ get; set; }}
+        public bool HasPrevious => CurrentPage > 1;
+        public bool HasNext => CurrentPage < TotalPages;
+    }}
+}}";
+            fileService.Create(FolderPaths.ModelPaginationFolder, "PagedResult.cs", text);
+        }
     }
 }

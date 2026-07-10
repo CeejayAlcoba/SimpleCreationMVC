@@ -21,6 +21,18 @@ namespace SimpleCreationMVC.Services.ServiceServices
             }
             CreateRegistration(tableSchemas);
         }
+        public void CreateEFCore(List<TableSchema> tableSchemas)
+        {
+            foreach (var tableSchema in tableSchemas)
+            {
+                if (tableSchema.isServiceFileAllowed == false) continue;
+
+                string tableName = tableSchema.TABLE_NAME;
+                _serviceInterfacesService.CreateEFCore(tableName);
+                _serviceClassesService.CreateEFCore(tableName);
+            }
+            CreateRegistration(tableSchemas);
+        }
 
         public void CreateRegistration(List<TableSchema> tableSchemas)
         {

@@ -559,9 +559,11 @@ using System.Reflection;
 using System.Linq.Expressions;
 using {FolderNames.Utilities}.{FolderNames.Classes};
 using {FolderNames.Repositories}.{FolderNames.Interfaces};
+using {FolderNames.Models}.{FolderNames.Pagination};
 
 namespace {FolderNames.Repositories}.{FolderNames.Classes}
 {{
+
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {{
         protected readonly ApplicationContext _context;
@@ -578,9 +580,9 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return entity;
         }}
 
-        public virtual async Task<IEnumerable<T>> GetAllAsync(T? filter = null)
+        public virtual async Task<PagedResult<T>> GetAllAsync(int pageNumber = 1, int pageSize = 10, T? filter = null)
         {{
-            IQueryable<T> query = _context.Set<T>();
+            IQueryable<T> query = _context.Set<T>().AsNoTracking();
         
             if (filter != null)
             {{
@@ -593,14 +595,14 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                     if (property.PropertyType.IsClass && property.PropertyType != typeof(string)) continue;
 
                     var value = property.GetValue(filter);
+                    if (value == null) continue; // Skip build checks for properties left null in the filter
+
                     var member = Expression.Property(parameter, property);
                     var constant = Expression.Constant(value, property.PropertyType);
         
-                    var isNullCheck = Expression.Equal(constant, Expression.Constant(null, property.PropertyType));
                     var equalsCheck = Expression.Equal(member, constant);
-                    var condition = Expression.OrElse(isNullCheck, equalsCheck);
         
-                    combined = combined == null ? condition : Expression.AndAlso(combined, condition);
+                    combined = combined == null ? equalsCheck : Expression.AndAlso(combined, equalsCheck);
                 }}
         
                 if (combined != null)
@@ -609,8 +611,24 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                     query = query.Where(lambda);
                 }}
             }}
+
+            int totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         
-            return await query.ToListAsync();
+            return new PagedResult<T>
+            {{
+                Items = items,
+                CurrentPage = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages
+            }};
         }}
 
         public virtual async Task<T?> GetByIdAsync(int id)
@@ -656,7 +674,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
         {{
             if (entities == null || !entities.Any()) return entities;
 
-            // Uses EFCore.BulkExtensions native BulkInsertOrUpdate out of the box
             await _context.BulkInsertOrUpdateAsync(entities);
             return entities;
         }}
@@ -678,7 +695,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                 query = query.Where(deleteFilter);
             }}
 
-            // Corrected Merge deletion condition
             var entitiesToDelete = await query
                 .Where(x => !keepIds.Contains(EF.Property<int>(x, keyName)))
                 .ToListAsync();
@@ -695,7 +711,6 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
         private string GetKeyPropertyName()
         {{
-            // Pulls the actual mapped key name directly from EF core metadata maps
             var entityType = _context.Model.FindEntityType(typeof(T));
             var primaryKey = entityType?.FindPrimaryKey();
             var keyProperty = primaryKey?.Properties.FirstOrDefault();

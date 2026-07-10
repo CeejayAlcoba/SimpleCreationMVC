@@ -3,6 +3,7 @@
     public enum FolderNames
     {
         Models,
+        Pagination,
         TableValuedParameters,
         ProcedureQueries,
         ProcedureEnums,
@@ -29,6 +30,7 @@
         public static string UtilitiesInterfacesFolder => $"{FolderNames.Utilities}/{FolderNames.Interfaces}";
         public static string UtilitiesFolder => FolderNames.Utilities.ToString();
         public static string ModelsFolder => FolderNames.Models.ToString();
+        public static string ModelPaginationFolder => $"{FolderNames.Models}/{FolderNames.Pagination}";
         public static string ControllersFolder => FolderNames.Controllers.ToString();
         public static string JsClassesFolder => FolderNames.JsClasses.ToString();
         public static string TsTypesFolder => FolderNames.TsTypes.ToString();

@@ -29,5 +29,29 @@ namespace {FolderNames.Services}.{FolderNames.Interfaces}
 ";
             _fileService.Create(FolderPaths.ServicesInterfacesFolder, $"I{tableName}Service.cs", text);
         }
-    }
+        public void CreateEFCore(string tableName)
+        {
+            string text = $@"using Models;
+using {FolderNames.Models}.{FolderNames.Pagination};
+
+namespace {FolderNames.Services}.{FolderNames.Interfaces}
+{{
+    public interface I{tableName}Service
+    {{
+        Task<{tableName}?> InsertAsync({tableName} data);
+        Task<{tableName}?> UpdateAsync({tableName} data);
+        Task<PagedResult<{tableName}>> GetAllAsync(int pageNumber = 1, int pageSize = 10, {tableName}? filter = null);
+        Task<{tableName}?> GetByIdAsync(int id);
+        Task<{tableName}?> DeleteByIdAsync(int id);
+        Task<IEnumerable<{tableName}>> BulkInsertAsync(List<{tableName}> data);
+        Task<IEnumerable<{tableName}>> BulkUpdateAsync(List<{tableName}> data);
+        Task<IEnumerable<{tableName}>> BulkUpsertAsync(List<{tableName}> data);
+        Task<IEnumerable<{tableName}>> BulkMergeAsync(List<{tableName}> data);
+    }}
+}}
+";
+            _fileService.Create(FolderPaths.ServicesInterfacesFolder, $"I{tableName}Service.cs", text);
+        }
+    
+}
 }

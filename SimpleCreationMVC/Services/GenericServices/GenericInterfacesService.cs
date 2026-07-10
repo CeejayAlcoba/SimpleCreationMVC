@@ -59,17 +59,19 @@ namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
         }
         public void CreateEFCore()
         {
-            string text = $@"
-using System.Data;
+            string text = $@"using System.Data;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Linq.Expressions;
+using {FolderNames.Models}.{FolderNames.Pagination};
 
 namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
 {{
+
     public interface IGenericRepository<T>
         where T : class
     {{
-        Task<IEnumerable<T>> GetAllAsync(T? filter);
+        Task<PagedResult<T>> GetAllAsync(int pageNumber = 1, int pageSize = 10, T? filter = null);
         Task<T?> GetByIdAsync(int id);
         Task<T?> InsertAsync(T entity);
         Task<T?> UpdateAsync(T entity);

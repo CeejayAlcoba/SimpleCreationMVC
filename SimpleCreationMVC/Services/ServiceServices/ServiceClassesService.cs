@@ -74,5 +74,71 @@ namespace {FolderNames.Services}.{FolderNames.Classes}
 }}";
             _fileService.Create(FolderPaths.ServicesClassesFolder, $"{tableName}Service.cs", text);
         }
+        public void CreateEFCore(string tableName)
+        {
+            string repository = $"{tableName}Repository";
+            string repositoryName = $"_{_textService.ToCamelCase(repository)}";
+            string repositoryCamel = $"{_textService.ToCamelCase(repository)}";
+            string serviceName = $"{tableName}Service";
+
+            string text = $@"using {FolderNames.Models};
+using {FolderNames.Repositories}.{FolderNames.Interfaces};
+using {FolderNames.Services}.{FolderNames.Interfaces};
+using {FolderNames.Models}.{FolderNames.Pagination};
+
+namespace {FolderNames.Services}.{FolderNames.Classes}
+{{
+    public class {serviceName} : I{serviceName}
+    {{
+        private readonly I{repository} {repositoryName};
+
+        public {serviceName}(I{repository} {repositoryCamel})
+        {{
+            {repositoryName} = {repositoryCamel};
+        }}
+
+        public async Task<{tableName}?> InsertAsync({tableName} data)
+        {{
+            return await {repositoryName}.InsertAsync(data);
+        }}
+
+        public async Task<{tableName}?> UpdateAsync({tableName} data)
+        {{
+            return await {repositoryName}.UpdateAsync(data);
+        }}
+        public async Task<PagedResult<{tableName}>> GetAllAsync(int pageNumber = 1, int pageSize = 10, {tableName}? filter = null)
+        {{
+            return await {repositoryName}.GetAllAsync(pageNumber, pageSize, filter);
+        }}
+
+        public async Task<{tableName}?> GetByIdAsync(int id)
+        {{
+            return await {repositoryName}.GetByIdAsync(id);
+        }}
+
+        public async Task<{tableName}?> DeleteByIdAsync(int id)
+        {{
+            return await {repositoryName}.DeleteByIdAsync(id);
+        }}
+        public async Task<IEnumerable<{tableName}>> BulkInsertAsync(List<{tableName}> data)
+        {{
+            return await {repositoryName}.BulkInsertAsync(data);
+        }}
+        public async Task<IEnumerable<{tableName}>> BulkUpdateAsync(List<{tableName}> data)
+        {{
+            return await {repositoryName}.BulkUpdateAsync(data);
+        }}
+        public async Task<IEnumerable<{tableName}>> BulkUpsertAsync(List<{tableName}> data)
+        {{
+            return await {repositoryName}.BulkUpsertAsync(data);
+        }}
+        public async Task<IEnumerable<{tableName}>> BulkMergeAsync(List<{tableName}> data)
+        {{
+            return await {repositoryName}.BulkMergeAsync(data);
+        }}
+    }}
+}}";
+            _fileService.Create(FolderPaths.ServicesClassesFolder, $"{tableName}Service.cs", text);
+        }
     }
 }
