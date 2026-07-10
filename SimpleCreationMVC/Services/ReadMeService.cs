@@ -64,6 +64,12 @@ In Program.cs (Main project) add this
             connectionString,
             b => b.MigrationsAssembly(typeof(ApplicationContext).Assembly.FullName)
         ));
+    //This is to avoid circular reference cycles
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        });
 
 In appsettings.json
     ""ConnectionStrings"": {
