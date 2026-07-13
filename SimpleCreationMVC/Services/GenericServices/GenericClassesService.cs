@@ -591,17 +591,22 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
         
                 foreach (var property in typeof(T).GetProperties())
                 {{
-                    // Skip navigation/class properties to avoid runtime evaluation errors
+                 
+                    if (!property.CanRead) continue;
+
                     if (property.PropertyType.IsClass && property.PropertyType != typeof(string)) continue;
 
+                    if (typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType) && property.PropertyType != typeof(string)) continue;
+
                     var value = property.GetValue(filter);
-                    if (value == null) continue; // Skip build checks for properties left null in the filter
+
+                    if (value == null) continue;
 
                     var member = Expression.Property(parameter, property);
                     var constant = Expression.Constant(value, property.PropertyType);
-        
+
                     var equalsCheck = Expression.Equal(member, constant);
-        
+
                     combined = combined == null ? equalsCheck : Expression.AndAlso(combined, equalsCheck);
                 }}
         
