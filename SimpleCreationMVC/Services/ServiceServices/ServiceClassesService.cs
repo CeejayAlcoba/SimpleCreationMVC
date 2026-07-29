@@ -85,6 +85,7 @@ namespace {FolderNames.Services}.{FolderNames.Classes}
 using {FolderNames.Repositories}.{FolderNames.Interfaces};
 using {FolderNames.Services}.{FolderNames.Interfaces};
 using {FolderNames.Models}.{FolderNames.Pagination};
+using System.Linq.Expressions;
 
 namespace {FolderNames.Services}.{FolderNames.Classes}
 {{
@@ -106,9 +107,9 @@ namespace {FolderNames.Services}.{FolderNames.Classes}
         {{
             return await {repositoryName}.UpdateAsync(data);
         }}
-        public async Task<PagedResult<{tableName}>> GetAllAsync(int pageNumber = 1, int pageSize = 10, {tableName}? filter = null)
+        public async Task<PagedResult<{tableName}>> GetAllAsync(int pageNumber = 1, int pageSize = 10, {tableName}? filter = null, Expression<Func<{tableName}, object>>? orderByProperty = null, bool isDescending = false, params Expression<Func<{tableName}, object>>[] includes)
         {{
-            return await {repositoryName}.GetAllAsync(pageNumber, pageSize, filter);
+            return await {repositoryName}.GetAllAsync(pageNumber, pageSize, filter, orderByProperty, isDescending, includes);
         }}
 
         public async Task<{tableName}?> GetByIdAsync(int id)

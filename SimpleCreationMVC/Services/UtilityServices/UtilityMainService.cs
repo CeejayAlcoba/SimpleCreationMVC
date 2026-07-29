@@ -19,6 +19,7 @@ namespace SimpleCreationMVC.Services.UtilityServices
             _utilityInterfacesService.CreateJwtUtility();
             _utilityInterfacesService.CreateEncryptUtility();
             _utilityInterfacesService.CreateFileUtility();
+            _utilityInterfacesService.CreateIExpressionHelperUtility();
 
             _utilityClassesService.CreateAppUtility();
             _utilityClassesService.CreateAutoMapperUtility();
@@ -27,6 +28,7 @@ namespace SimpleCreationMVC.Services.UtilityServices
             _utilityClassesService.CreateJwtUtility();
             _utilityClassesService.CreateEncryptUtility();
             _utilityClassesService.CreateFileUtility();
+            _utilityClassesService.CreateExpressionHelperUtility();
 
             _utilityReadMe.CreateFileUtility();
             _utilityReadMe.CreateJWTUtility();
@@ -57,6 +59,7 @@ namespace {FolderNames.Utilities}
             services.AddScoped<IEncryptUtility, EncryptUtility>();
             services.AddScoped<IJwtUtility, JwtUtility>();
             services.AddScoped<IFileUtility, FileUtility>();
+            services.AddScoped<IExpressionHelperUtility, ExpressionHelperUtility>();
         }}
     }}
 }}

@@ -33,6 +33,7 @@ namespace {FolderNames.Services}.{FolderNames.Interfaces}
         {
             string text = $@"using Models;
 using {FolderNames.Models}.{FolderNames.Pagination};
+using System.Linq.Expressions;
 
 namespace {FolderNames.Services}.{FolderNames.Interfaces}
 {{
@@ -40,7 +41,7 @@ namespace {FolderNames.Services}.{FolderNames.Interfaces}
     {{
         Task<{tableName}?> InsertAsync({tableName} data);
         Task<{tableName}?> UpdateAsync({tableName} data);
-        Task<PagedResult<{tableName}>> GetAllAsync(int pageNumber = 1, int pageSize = 10, {tableName}? filter = null);
+        Task<PagedResult<{tableName}>> GetAllAsync(int pageNumber = 1, int pageSize = 10, {tableName}? filter = null, Expression<Func<{tableName}, object>>? orderByProperty = null, bool isDescending = false, params Expression<Func<{tableName}, object>>[] includes);
         Task<{tableName}?> GetByIdAsync(int id);
         Task<{tableName}?> DeleteByIdAsync(int id);
         Task<IEnumerable<{tableName}>> BulkInsertAsync(List<{tableName}> data);

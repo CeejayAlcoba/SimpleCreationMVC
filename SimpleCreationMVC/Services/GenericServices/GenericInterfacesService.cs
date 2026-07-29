@@ -71,7 +71,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Interfaces}
     public interface IGenericRepository<T>
         where T : class
     {{
-        Task<PagedResult<T>> GetAllAsync(int pageNumber = 1, int pageSize = 10, T? filter = null);
+        Task<PagedResult<T>> GetAllAsync(int pageNumber = 1, int pageSize = 10, T? filter = null, Expression<Func<T, object>>? orderByProperty = null, bool isDescending = false, params Expression<Func<T, object>>[] includes);
         Task<T?> GetByIdAsync(int id);
         Task<T?> InsertAsync(T entity);
         Task<T?> UpdateAsync(T entity);

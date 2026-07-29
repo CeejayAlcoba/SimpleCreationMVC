@@ -118,5 +118,21 @@ namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
 ";
             _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IFileUtility.cs", text);
         }
+        public void CreateIExpressionHelperUtility()
+        {
+            string text = $@"
+using System;
+using System.Linq.Expressions;
+
+namespace {FolderNames.Utilities}.{FolderNames.Interfaces}
+{{
+    public interface IExpressionHelperUtility
+    {{
+        Expression<Func<T, object>>? GetOrderByExpression<T>(string? propertyName);
+    }}
+}}
+";
+            _fileService.Create(FolderPaths.UtilitiesInterfacesFolder, "IExpressionHelperUtility.cs", text);
+        }
     }
 }

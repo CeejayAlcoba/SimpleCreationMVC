@@ -309,5 +309,45 @@ namespace {FolderNames.Utilities}.{FolderNames.Classes}
 ";
             _fileService.Create(FolderPaths.UtilitiesClassesFolder, "FileUtility.cs", text);
         }
+        public void CreateExpressionHelperUtility()
+        {
+            var text = $@"
+using System;
+using System.Linq.Expressions;
+using System.Reflection;
+using {FolderNames.Utilities}.{FolderNames.Interfaces};
+
+namespace {FolderNames.Utilities}.{FolderNames.Classes}
+{{
+    public class ExpressionHelperUtility : IExpressionHelperUtility
+    {{
+        public Expression<Func<T, object>>? GetOrderByExpression<T>(string? propertyName)
+        {{
+            if (string.IsNullOrWhiteSpace(propertyName))
+                return null;
+
+           
+            var propertyInfo = typeof(T).GetProperty(
+                propertyName, 
+                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
+            );
+
+            if (propertyInfo == null)
+                throw new ArgumentException($""Property '{{propertyName}}' does not exist on type '{{typeof(T).Name}}'."");
+
+            var parameter = Expression.Parameter(typeof(T), ""x"");
+            var propertyAccess = Expression.Property(parameter, propertyInfo);
+
+           
+            var castToObject = Expression.Convert(propertyAccess, typeof(object));
+
+            return Expression.Lambda<Func<T, object>>(castToObject, parameter);
+        }}
+    }}
+}}
+";
+            _fileService.Create(FolderPaths.UtilitiesClassesFolder, "ExpressionHelperUtility.cs", text);
+        }
+
     }
 }

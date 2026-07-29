@@ -196,9 +196,11 @@ namespace ApiControllers
             string serviceCammel = $"{textService.ToCamelCase(service)}";
 
             string text = $@"using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 using {FolderNames.Models};
 using {FolderNames.Models}.{FolderNames.Pagination}; 
 using {FolderNames.Services}.{FolderNames.Interfaces};
+using {FolderNames.Utilities}.{FolderNames.Interfaces};
 
 namespace ApiControllers
 {{
@@ -207,26 +209,34 @@ namespace ApiControllers
     public class {table}Controller : ControllerBase
     {{
         private readonly I{service} {serviceName};
+        private readonly IExpressionHelperUtility _expressionHelperUtility;
 
-        public {table}Controller(I{service} {serviceCammel})
+        public {table}Controller(I{service} {serviceCammel}, IExpressionHelperUtility expressionHelperUtility)
         {{
             {serviceName} = {serviceCammel};
+            _expressionHelperUtility = expressionHelperUtility;
         }}
 
         [HttpGet(""list"")]
-        public async Task<IActionResult> GetAllAsync([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] {table}? filter = null)
+        public async Task<IActionResult> GetAllAsync(
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10, 
+            [FromQuery] {tableName}? filter = null,
+            [FromQuery] string? orderBy = null,
+            [FromQuery] bool isDescending = false)
         {{
             try
             {{
-                PagedResult<{table}> data = await {serviceName}.GetAllAsync(pageNumber, pageSize, filter);
+                var orderByExpression = _expressionHelperUtility.GetOrderByExpression<{tableName}>(orderBy);
+                PagedResult<{tableName}> data = await {serviceName}.GetAllAsync(pageNumber, pageSize, null, orderByExpression, isDescending);
                 return Ok(data);
             }}
             catch (Exception ex)
             {{
-                return BadRequest(ex.Message);
+                return BadRequest(new {{ message = ex.Message }});
             }}
-           
         }}
+
         [HttpGet(""{{id}}"")]
         public async Task<IActionResult> GetByIdAsync(int id)
         {{

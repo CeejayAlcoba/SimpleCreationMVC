@@ -580,43 +580,59 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return entity;
         }}
 
-        public virtual async Task<PagedResult<T>> GetAllAsync(int pageNumber = 1, int pageSize = 10, T? filter = null)
+        public virtual async Task<PagedResult<T>> GetAllAsync(
+         int pageNumber = 1,
+         int pageSize = 10,
+         T? filter = null,
+         Expression<Func<T, object>>? orderByProperty = null,
+         bool isDescending = false,
+         params Expression<Func<T, object>>[] includes)
         {{
             IQueryable<T> query = _context.Set<T>().AsNoTracking();
-        
+
+            // 1. [Filtering Block remains exactly the same as your original]
             if (filter != null)
             {{
                 var parameter = Expression.Parameter(typeof(T), ""x"");
                 Expression? combined = null;
-        
                 foreach (var property in typeof(T).GetProperties())
                 {{
-                 
                     if (!property.CanRead) continue;
-
                     if (property.PropertyType.IsClass && property.PropertyType != typeof(string)) continue;
-
                     if (typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType) && property.PropertyType != typeof(string)) continue;
 
                     var value = property.GetValue(filter);
-
                     if (value == null) continue;
 
                     var member = Expression.Property(parameter, property);
                     var constant = Expression.Constant(value, property.PropertyType);
-
                     var equalsCheck = Expression.Equal(member, constant);
-
                     combined = combined == null ? equalsCheck : Expression.AndAlso(combined, equalsCheck);
                 }}
-        
                 if (combined != null)
                 {{
-                    var lambda = Expression.Lambda<Func<T, bool>>(combined, parameter);
-                    query = query.Where(lambda);
+                    query = query.Where(Expression.Lambda<Func<T, bool>>(combined, parameter));
                 }}
             }}
 
+            // 2. Apply Eager Loading (Includes)
+            if (includes != null && includes.Length > 0)
+            {{
+                foreach (var include in includes)
+                {{
+                    query = query.Include(include);
+                }}
+            }}
+
+            // 3. Type-Safe ""keyof"" Sorting Block
+            if (orderByProperty != null)
+            {{
+                query = isDescending
+                    ? query.OrderByDescending(orderByProperty)
+                    : query.OrderBy(orderByProperty);
+            }}
+
+            // 4. Pagination and Execution
             int totalCount = await query.CountAsync();
 
             var items = await query
@@ -625,7 +641,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                 .ToListAsync();
 
             int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        
+
             return new PagedResult<T>
             {{
                 Items = items,
@@ -635,6 +651,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
                 TotalPages = totalPages
             }};
         }}
+
 
         public virtual async Task<T?> GetByIdAsync(int id)
         {{
@@ -659,32 +676,64 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
             return deletedData;
         }}
 
-        public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> list)
+ 
+        public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> list)
         {{
-            if (list == null || !list.Any()) return list;
+            if (list == null || !list.Any()) return list ?? new List<T>();
 
-            await _context.BulkUpdateAsync(list);
+            await _context.Set<T>().AddRangeAsync(list);
+            await _context.SaveChangesAsync();
             return list;
         }}
 
-        public virtual async Task<IEnumerable<T>> BulkInsertAsync(List<T> list)
+        public virtual async Task<IEnumerable<T>> BulkUpdateAsync(List<T> list)
         {{
-            if (list == null || !list.Any()) return list;
+            if (list == null || !list.Any()) return list ?? new List<T>();
 
-            await _context.BulkInsertAsync(list);
+            _context.Set<T>().UpdateRange(list);
+            await _context.SaveChangesAsync();
             return list;
         }}
 
         public virtual async Task<IEnumerable<T>> BulkUpsertAsync(List<T> entities)
         {{
-            if (entities == null || !entities.Any()) return entities;
+            if (entities == null || !entities.Any()) return entities ?? new List<T>();
 
-            await _context.BulkInsertOrUpdateAsync(entities);
+            string keyName = GetKeyPropertyName();
+
+            var itemsToInsert = new List<T>();
+            var itemsToUpdate = new List<T>();
+
+            foreach (var entity in entities)
+            {{
+                var propValue = entity.GetType().GetProperty(keyName)?.GetValue(entity);
+                if (propValue == null || Convert.ToInt32(propValue) == 0)
+                {{
+                    itemsToInsert.Add(entity);
+                }}
+                else
+                {{
+                    itemsToUpdate.Add(entity);
+                }}
+            }}
+
+            if (itemsToInsert.Any())
+            {{
+                await _context.Set<T>().AddRangeAsync(itemsToInsert);
+            }}
+
+            if (itemsToUpdate.Any())
+            {{
+                _context.Set<T>().UpdateRange(itemsToUpdate);
+            }}
+
+            await _context.SaveChangesAsync();
             return entities;
         }}
 
         public virtual async Task<IEnumerable<T>> BulkMergeAsync(List<T> entities, Expression<Func<T, bool>>? deleteFilter = null)
         {{
+            entities ??= new List<T>();
             string keyName = GetKeyPropertyName();
 
             var keepIds = entities
@@ -706,7 +755,7 @@ namespace {FolderNames.Repositories}.{FolderNames.Classes}
 
             if (entitiesToDelete.Any())
             {{
-                await _context.BulkDeleteAsync(entitiesToDelete);
+                _context.Set<T>().RemoveRange(entitiesToDelete);
             }}
 
             await BulkUpsertAsync(entities);
